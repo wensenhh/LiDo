@@ -1,10 +1,23 @@
 import App from './App'
 import messages from './locale/index'
-
+import tools from './common/tools.js'
+import Web3 from 'web3'
+import axios from 'axios'
+import webUrl from './common/url.js'
+ 
 let i18nConfig = {
   locale: uni.getLocale(),
   messages
 }
+
+Vue.prototype.$tools=tools
+Vue.prototype.Web3 = Web3
+Vue.prototype.$axios = axios
+
+// 隐藏地址
+Vue.filter('hideaddress',(addr) => {
+	return addr.slice(0,10) + '***' + addr.slice(-6)
+})
 
 // #ifndef VUE3
 import Vue from 'vue'

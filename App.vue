@@ -16,7 +16,9 @@
   .container {
     padding: 15px;
   }
-
+  view{
+	  box-sizing: border-box;
+  }
   button {
     margin-bottom: 15px;
   }

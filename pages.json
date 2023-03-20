@@ -3,7 +3,8 @@
 		{
 			"path": "pages/index/index",
 			"style": {
-				"navigationBarTitleText": "%index.title%"
+				"navigationBarTitleText": "%index.title%",
+				"navigationStyle": "custom"
 			}
 		}, {
 			"path": "pages/component/component",
@@ -25,27 +26,6 @@
 			}
 		}
 	],
-	"tabBar": {
-		"color": "#7A7E83",
-		"selectedColor": "#007AFF",
-		"borderStyle": "black",
-		"backgroundColor": "#F8F8F8",
-		"list": [{
-				"pagePath": "pages/index/index",
-				"text": "%index.home%"
-			},
-			{
-				"pagePath": "pages/component/component",
-				"text": "%index.component%"
-			}, {
-				"pagePath": "pages/api/api",
-				"text": "%index.api%"
-			}, {
-				"pagePath": "pages/schema/schema",
-				"text": "%index.schema%"
-			}
-		]
-	},
 	"globalStyle": {
 		"navigationBarTextStyle": "black",
 		"navigationBarTitleText": "LiDo",

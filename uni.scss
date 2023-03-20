@@ -74,3 +74,113 @@ $uni-color-subtitle: #555555; // 二级标题颜色
 $uni-font-size-subtitle:26px;
 $uni-color-paragraph: #3F536E; // 文章段落颜色
 $uni-font-size-paragraph:15px;
+
+// 快捷布局
+
+@mixin flexCenter {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+@mixin flexLeft {
+	display: flex;
+	justify-content: flex-start;
+	align-items: center;
+}
+
+@mixin flexRight {
+	display: flex;
+	justify-content: flex-end;
+	align-items: center;
+}
+
+@mixin flexBetween {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+@mixin flexCenterColumn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-direction: column;
+}
+
+@mixin flexLeftColumn {
+	display: flex;
+	align-items: flex-start;
+	justify-content: center;
+	flex-direction: column;
+}
+
+@mixin flexLeftColumn {
+	display: flex;
+	align-items: flex-start;
+	justify-content: center;
+	flex-direction: column;
+}
+
+@mixin flexRightColumn {
+	display: flex;
+	align-items: flex-end;
+	justify-content: center;
+	flex-direction: column;
+}
+
+@mixin flexGrid {
+	display: flex;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	align-items: space-between;
+}
+
+@mixin justifiedLayout {
+	text-align: center;
+	&:first-child {
+		text-align: left;
+	}
+	&:last-child {
+		text-align: right;
+	}
+}
+
+@mixin threeflexLayout {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	&-center{
+		flex: 1;
+		overflow: hidden;
+	}
+}
+
+@mixin fullImage {
+	image {
+		width: 100%;
+	}
+}
+
+@mixin calcMargin($val) {
+	width: calc(100% + ((2 * #{$val}) * 1upx));
+	margin-left: calc(( -1 * #{$val}) * 1upx);
+}
+
+@mixin clearLastMargin {
+	&:last-child{
+		margin: 0;
+	}
+}
+
+@mixin clearLastBorder {
+	&:last-child{
+		border-bottom: 0;
+	}
+}
+
+
+/* 动画 */
+@mixin initTransition($val) {
+	transition: ($val * 1s) all;
+}
