@@ -2,7 +2,7 @@
 	<view class="container">
 		<HeaderCom></HeaderCom>
 		<!-- 轮播组件 -->
-		<Xsuu-swiper :swiperItems="swiperItems" :margin="0" :DotPosition="1"></Xsuu-swiper>
+		<Xsuu-swiper :swiperItems="swiperItems" :margin="0" :DotPosition="1" :button="0"></Xsuu-swiper>
 		<!-- 公告组件 -->
 		<zetank-notice :noticeList='noticeList' :interval="3000" @clickNotice="clicktest"></zetank-notice>
 		<!-- 钱包账户 -->
@@ -10,17 +10,17 @@
 			<view class="walletbox-main">
 				<view class="walletbox-main-databox">
 					<view>
-						<view>1000.00 <span>≈$100.00</span></view>
+						<view>{{UserMoney.linglu}} <span>≈$100.00</span></view>
 						<view>{{$t('index.Zerostroke') + $t('index.wallet')}}(LTC)</view>
 					</view>
 					<view class="walletbox-main-databox-centerbox"></view>
 					<view>
-						<view>1000.00 <span>≈$100.00</span></view>
+						<view>{{UserMoney.pledge}} <span>≈$100.00</span></view>
 						<view>{{$t('index.pledge') + $t('index.wallet')}} (LTC) </view>
 					</view>
 				</view>
 				<view class="walletbox-main-tiqubox">
-					{{$t('index.extract')}}
+					{{$t('index.charge')}}
 				</view>
 			</view>
 		</view>
@@ -34,43 +34,47 @@
 		<!-- 领取LTC -->
 		<view class="getbox">
 			<view>{{$t('index.Freeofcharge')}}LTC</view>
-			<view>{{$t('index.click') + " " + $t('index.Freeofcharge')}} 0.001LTC</view>
+			<view class="" v-if="UserMoney.ifkl == 1" @click="getLqLTC">
+				{{$t('index.click') + " " + $t('index.Freeofcharge')}} {{UserMoney.klLTC}}LTC
+			</view>
+			<view class="active" v-else>倒计时 {{ countdown }}</view>
 		</view>
 		<!-- 质押 -->
 		<view class="pledgebox">
 			<view class="pledgebox-onebox">
 				<view>{{$t('index.pledge')}} <span>PLEDGE</span></view>
-				<view>{{$t('index.mypledgerecord')}} <span> > </span> </view>
+				<view @tap="$tools.noOpen()">{{$t('index.mypledgerecord')}} <span> > </span> </view>
 			</view>
 			<view class="pledgebox-iptbox">
 				<input type="number" :placeholder="$t('index.pledgeusdtnum')">
 			</view>
 			<view class="pledgebox-balance">
-				USDT{{$t('index.balance')}}：100.00
+				USDT{{$t('index.balance')}}：{{usdtBalance}}
 			</view>
 			<view class="pledgebox-Daybox">
 				<view :class="item.actived ? 'active' : ''" v-for="(item,i) in pledgeDay" @tap="changeTime(i)">
-					{{item.name}} {{$t('index.day')}}</view>
+					{{item.name}} {{$t('index.day')}}
+				</view>
 			</view>
-			<view class="pledgebox-btnbox">
+			<view class="pledgebox-btnbox" @tap="$tools.noOpen()">
 				{{$t('index.confirm') + $t('index.pledge')}}
 			</view>
 		</view>
 		<!-- 分类 -->
 		<view class="gridbox">
-			<view>
+			<view @tap="$tools.noOpen()">
 				<image src="../../static/myteam.png" mode=""></image>
 				<view class="">
 					{{$t('index.myteam')}}
 				</view>
 			</view>
-			<view>
+			<view @tap="$tools.noOpen()">
 				<image src="../../static/datazhanshi.png" mode=""></image>
 				<view class="">
 					{{$t('index.datapresentation')}}
 				</view>
 			</view>
-			<view>
+			<view @tap="$tools.noOpen()">
 				<image src="../../static/phb_icon.png" mode=""></image>
 				<view class="">
 					{{$t('index.rankinglist')}}
@@ -83,47 +87,45 @@
 <script>
 	import HeaderCom from '@/components/HeaderCom/HeaderCom.vue'
 	import XsuuSwiper from "@/components/Xss-swiper/Xsuu-swiper.vue"
+	import {
+		usdtaddr,
+		contractaddr,
+		lidoabi,
+		tokenabi
+	} from "@/common/lidoabi";
+	const Web3 = require("@/common/getWeb3");
+	import web3utils from '@/common/web3Utils.js';
+	import {
+		Login,
+		getUserassets,
+		getGiveltc
+	} from '@/api/api.js';
 	export default {
 		data() {
 			return {
 				systemLocale: '',
 				applicationLocale: '',
 				swiperItems: [{
-						"img": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fn.sinaimg.cn%2Fsinacn11%2F440%2Fw744h496%2F20181030%2F97c2-hnaivxq7344712.jpg&refer=http%3A%2F%2Fn.sinaimg.cn&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=jpeg?sec=1619914829&t=52a970d21d4898c8e7ca21b8b5aa9312",
-						"title": "鲤程新能源",
-						"Subtitle": "心鲤程，心鲤想！",
+						"img": "../../static/banna1.png",
 						"tip": "限时",
 						"url": "111"
-					},
-					{
-						"img": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fs1.xchuxing.com%2Fxchuxing%2Fforum%2F201607%2F27%2F185524zj7wog6qizk9o90k.jpg&refer=http%3A%2F%2Fs1.xchuxing.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=jpeg?sec=1619914861&t=4c64a4a5cec709f9d03507b793546646",
-						"title": "包月低至9.9元",
-						"Subtitle": "立享受充电礼包！",
-						"tip": "推荐",
+					},{
+						"img": "../../static/banna1.png",
+						"tip": "限时",
 						"url": "111"
-					},
-					{
-						"img": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Finews.gtimg.com%2Fnewsapp_match%2F0%2F11780621658%2F0.jpg&refer=http%3A%2F%2Finews.gtimg.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=jpeg?sec=1619914935&t=7d98cfe6b5a2634598fc7bda871aa7c9",
-						"title": "进口儿童座椅",
-						"Subtitle": "￥698.99",
-						"tip": "进口",
-						"url": "111"
-					},
-					{
-						"img": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fstc.zjol.com.cn%2Fg1%2FM000E11CggSDVi-zTuAT1Y3AAB2NSzPgKI097.jpg%3Fwidth%3D576%26height%3D340&refer=http%3A%2F%2Fstc.zjol.com.cn&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=jpeg?sec=1619914972&t=9cc0a578d4818d87c43f1fe839010096",
-						"title": "品牌T恤",
-						"Subtitle": "￥22.99",
-						"tip": "nike",
+					},{
+						"img": "../../static/banna1.png",
+						"tip": "限时",
 						"url": "111"
 					}
 				],
 				noticeList: [{
 						id: 1,
-						title: '***购买了一根辣条'
+						title: 'Lido Finance Litecoin 即將上線！'
 					},
 					{
 						id: 2,
-						title: '***购买了一吨可乐'
+						title: 'Lido Finance Litecoin 即將上線！'
 					}
 				],
 				pledgeDay: [{
@@ -143,7 +145,16 @@
 					actived: false
 				}],
 				pledgeDayid: null,
-				address: ''
+				address: '',
+				UserMoney: {
+					linglu: 0,
+					pledge: 0,
+					klLTC: 0,
+					ifkl: null
+				},
+				timeall: null,
+				countdown: null,
+				usdtBalance: 0
 			}
 		},
 		components: {
@@ -151,6 +162,7 @@
 			XsuuSwiper
 		},
 		async onLoad() {
+			let that = this
 			let systemInfo = uni.getSystemInfoSync();
 			this.systemLocale = systemInfo.language;
 			this.applicationLocale = uni.getLocale();
@@ -160,9 +172,136 @@
 			})
 			// 获取地址
 			uni.setStorageSync('address', "");
-			this.address = await this.$tools.getAddress()
+			this.address = await this.$tools.getAddress();
+			if (!!this.address) {
+				uni.setStorageSync('address', this.address);
+				if (window.web3.utils) {
+					that.callRegister()
+				} else {
+					that.getWeb3fun(() => {
+						that.callRegister()
+					})
+				}
+			} else {
+				this.$tools.toast('钱包地址获取失败~')
+			}
 		},
 		methods: {
+			init() {
+				this.getUserMoney() // 获取用户资产
+			},
+			getUserMoney() {
+				getUserassets().then(res => {
+					this.UserMoney = {
+						linglu: res.obj[0].list[0].using,
+						pledge: res.obj[1].list[0].using,
+						klLTC: res.obj[0].list[0].give,
+						ifkl: res.obj[0].status
+					}
+					if (res.obj[0].status !== 1) {
+						let nowdate = new Date();
+						let lefttime = (res.obj[0].timeStmp - nowdate.getTime()) / 1000; // 距离结束时间的秒数
+						this.timeall = lefttime
+						this.Time()
+					}
+				})
+			},
+			getLqLTC() {
+				let that = this
+				uni.showModal({
+					title: '提示',
+					content: '你确定要领取LTC吗？',
+					success(res) {
+						if (res.confirm) {
+							getGiveltc().then(res => {
+
+								that.getUserMoney() // 获取用户资产
+								return that.$tools.toast('领取成功~')
+							})
+						}
+					}
+				})
+			},
+			callRegister(callback) {
+				let that = this;
+				try {
+					let web3 = window.web3
+					let MyContract = web3utils.createContract(lidoabi, contractaddr, this.address)
+					let tokenContract = web3utils.createContract(tokenabi, usdtaddr, this.address)
+					tokenContract.methods.balanceOf(that.address).call({
+						from: that.address
+					}, function(error, result) {
+						that.usdtBalance = Number(web3.utils.fromWei(result, 'ether')).toFixed(4)
+					});
+					MyContract.methods.getRegister(this.address).call().then(res => {
+						console.log('是否注册=', res)
+						if (!res) {
+							const bnbnum = web3.utils.toWei('0.003', "ether")
+							MyContract.methods.register().send({
+								from: this.address,
+								value: bnbnum
+							}).then(res => {
+								console.log('注册成功=', res)
+								// 调取后台注册接口
+								that.getUserLogin()
+							}).catch(err => {
+								console.log('注册失败=', res)
+							})
+						} else {
+							// 调取后台注册接口
+							that.getUserLogin()
+						}
+					})
+				} catch (error) {
+					console.error("trigger smart contract error", error)
+				}
+			},
+			getUserLogin(callback) {
+				Login({
+					name: this.address,
+					parentName: 'ui2eae'
+				}).then(res => {
+					uni.setStorageSync('token', res.obj.token);
+					uni.setStorageSync('userId', res.obj.id);
+					this.$tools.toast('登录成功~')
+					this.init()
+				})
+			},
+			getWeb3fun(callback) {
+				let that = this
+				// web3前面必须有window
+				Web3.default.getWeb3().then((res) => {
+					window.web3 = res;
+					console.log("getWeb3", res);
+					return callback && callback()
+				})
+			},
+			//定时器没过1秒参数减1
+			Time() {
+				let that = this;
+				let inter = setInterval(() => {
+					if (this.timeall <= 0) {
+						that.getUserMoney()
+						clearInterval(inter)
+					}
+					this.timeall -= 1
+					that.countDown(this.timeall)
+				}, 1000)
+			},
+			//计算倒计时时间
+			countDown(value) {
+				let d = parseInt(value / (24 * 60 * 60));
+				d = d < 10 ? "0" + d : d;
+				let h = parseInt(value / (60 * 60) % 24);
+				h = h < 10 ? "0" + h : h;
+				let m = parseInt(value / 60 % 60);
+				m = m < 10 ? "0" + m : m;
+				let s = parseInt(value % 60);
+				s = s < 10 ? "0" + s : s;
+				console.log(d + "天" + h + "时" + m + "分" + s + "秒");
+				this.timeall = value
+				this.countdown = h + "时" + m + "分" + s + "秒"
+			},
 			changeTime(i) {
 				let arr = this.pledgeDay
 				arr.forEach((item, index) => {
@@ -298,6 +437,12 @@
 				background-color: #1F1F1F;
 			}
 		}
+
+		.active {
+			background-color: #F2A611 !important;
+			color: #FFFFFF !important;
+		}
+
 	}
 
 	.pledgebox {
@@ -369,7 +514,8 @@
 				color: #00D383;
 			}
 		}
-		&-btnbox{
+
+		&-btnbox {
 			@include flexCenter;
 			width: 100%;
 			height: 96rpx;
@@ -381,10 +527,12 @@
 			margin-top: 40rpx;
 		}
 	}
-	.gridbox{
+
+	.gridbox {
 		@include flexGrid;
 		margin-top: 24rpx;
-		>view{
+
+		>view {
 			@include flexCenter;
 			width: calc(33.3% - 10px);
 			height: 80rpx;
@@ -393,11 +541,13 @@
 			font-size: 30rpx;
 			font-weight: bold;
 			color: #ffffff;
-			>image{
+
+			>image {
 				width: 48rpx;
 				height: 48rpx;
 			}
-			>view{
+
+			>view {
 				padding-left: 8rpx;
 			}
 		}
