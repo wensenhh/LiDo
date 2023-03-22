@@ -1,9 +1,9 @@
  
 //测试
-// const IP = 'api.ziwuyin.com';
+// const IP = '192.168.254.36:8082';
 
 //正式
-const IP = 'user.xier.space';
+const IP = 'www.lite.ink';
 
 
 var ISHTTPS = false;

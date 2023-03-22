@@ -2,7 +2,8 @@ var tp = require('tp-js-sdk')
 const {
 	ethereum
 } = window;
-
+const chain_name = 'bsc';
+const chain_id = 56;
 const tools = {};
 
 tools.getAddress = async () => {
@@ -20,6 +21,45 @@ tools.getAddress = async () => {
 			alert("请安装MetaMask钱包");
 		}
 	}
+}
+
+tools.changeNetwork = async () => {
+    let isMetamaskWallet = ethereum && ethereum.isMetaMask;
+    let isTpWallet = tp.isConnected();
+
+    if (isTpWallet) {
+        let currentWallt = await tp.getCurrentWallet();
+        if (!currentWallt || !currentWallt.result) {
+            await tools.selectTpWallet(chain_name);
+        }
+        let blockChain = currentWallt.data.blockchain.toLowerCase();
+        if (blockChain !== chain_name) {
+            await tools.selectTpWallet(chain_name);
+        }
+    } else if (isMetamaskWallet) {
+        let networkId = await tools.getNetWorkId();
+        if (networkId != chain_id) {
+            await tools.metaMaskWallet(chain_id);
+            await metaMaskPermiss();
+        }
+    }
+}
+async function metaMaskPermiss() {
+    await ethereum.request({
+        method: 'wallet_requestPermissions',
+        params: [{
+            eth_accounts: {}
+        }],
+    }).catch(err => {
+        throw '授权失败';
+    })
+}
+
+tools.selectTpWallet = async (chain) => {
+    await tp.getWallet({
+        walletTypes: [chain],
+        switch: true
+    });
 }
 
 // 后退

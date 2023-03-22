@@ -34,12 +34,12 @@ service.interceptors.request.use(
 
 //配置成功后的拦截器
 service.interceptors.response.use(res => {
-	if (res.data.code == 200) {
+	if (res.data.code == 0) {
 		return res.data
 	} else if (res.data.code == 302) {
 		uni.setStorageSync('token', '')
 		Login({
-			account: uni.getStorageSync('address')
+			name: uni.getStorageSync('address')
 		}).then(res => {
 			console.log('登录成功：', res.data)
 			$tools.toast('登录成功~')
