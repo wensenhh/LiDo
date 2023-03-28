@@ -16,6 +16,7 @@ tools.getAddress = async () => {
 			let accounts = await ethereum.request({
 				method: 'eth_requestAccounts'
 			});
+			// getChainId()
 			return accounts[0];
 		} else {
 			alert("请安装MetaMask钱包");
@@ -23,43 +24,50 @@ tools.getAddress = async () => {
 	}
 }
 
-tools.changeNetwork = async () => {
-    let isMetamaskWallet = ethereum && ethereum.isMetaMask;
-    let isTpWallet = tp.isConnected();
+async function getChainId() {
+	ethereum.request({ method: 'eth_chainId' }).then((result) => {
+	    	console.log(result);
+	   	});
+	//！链id不是马上拿到的，如果通过链id来判断是不是主网的方式，请注意异步
+}
 
-    if (isTpWallet) {
-        let currentWallt = await tp.getCurrentWallet();
-        if (!currentWallt || !currentWallt.result) {
-            await tools.selectTpWallet(chain_name);
-        }
-        let blockChain = currentWallt.data.blockchain.toLowerCase();
-        if (blockChain !== chain_name) {
-            await tools.selectTpWallet(chain_name);
-        }
-    } else if (isMetamaskWallet) {
-        let networkId = await tools.getNetWorkId();
-        if (networkId != chain_id) {
-            await tools.metaMaskWallet(chain_id);
-            await metaMaskPermiss();
-        }
-    }
+tools.changeNetwork = async () => {
+	let isMetamaskWallet = ethereum && ethereum.isMetaMask;
+	let isTpWallet = tp.isConnected();
+
+	if (isTpWallet) {
+		let currentWallt = await tp.getCurrentWallet();
+		if (!currentWallt || !currentWallt.result) {
+			await tools.selectTpWallet(chain_name);
+		}
+		let blockChain = currentWallt.data.blockchain.toLowerCase();
+		if (blockChain !== chain_name) {
+			await tools.selectTpWallet(chain_name);
+		}
+	} else if (isMetamaskWallet) {
+		let networkId = await tools.getNetWorkId();
+		if (networkId != chain_id) {
+			await tools.metaMaskWallet(chain_id);
+			await metaMaskPermiss();
+		}
+	}
 }
 async function metaMaskPermiss() {
-    await ethereum.request({
-        method: 'wallet_requestPermissions',
-        params: [{
-            eth_accounts: {}
-        }],
-    }).catch(err => {
-        throw '授权失败';
-    })
+	await ethereum.request({
+		method: 'wallet_requestPermissions',
+		params: [{
+			eth_accounts: {}
+		}],
+	}).catch(err => {
+		throw '授权失败';
+	})
 }
 
 tools.selectTpWallet = async (chain) => {
-    await tp.getWallet({
-        walletTypes: [chain],
-        switch: true
-    });
+	await tp.getWallet({
+		walletTypes: [chain],
+		switch: true
+	});
 }
 
 // 后退
@@ -130,6 +138,13 @@ tools.toast = (title, duration = 1500, mask = false, icon = 'none') => {
 		duration: duration,
 		icon: icon,
 		mask: mask,
+	})
+}
+
+tools.loading = (title, mask = false) => {
+	uni.showLoading({
+		title: title,
+		mask: mask
 	})
 }
 

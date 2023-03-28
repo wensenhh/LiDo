@@ -6,30 +6,75 @@
 				"navigationBarTitleText": "%index.title%",
 				"navigationStyle": "custom"
 			}
-		}, {
-			"path": "pages/component/component",
-			"style": {
-				"navigationBarTitleText": "%index.component%",
-				"enablePullDownRefresh": false
-			}
-		}, {
-			"path": "pages/api/api",
-			"style": {
-				"navigationBarTitleText": "%index.api%",
-				"enablePullDownRefresh": false
-			}
-		}, {
-			"path": "pages/schema/schema",
-			"style": {
-				"navigationBarTitleText": "%index.schema%",
-				"enablePullDownRefresh": false
-			}
 		}
-	],
+	    ,{
+            "path" : "pages/myteam/myteam",
+            "style" :                                                                                    
+            {
+                "navigationBarTitleText": "我的團隊",
+                "enablePullDownRefresh": false
+            }
+            
+        }
+        ,{
+            "path" : "pages/capitaldetail/capitaldetail",
+            "style" :                                                                                    
+            {
+                "navigationBarTitleText": "资金明细",
+                "enablePullDownRefresh": false
+            }
+            
+        }
+        ,{
+            "path" : "pages/withdraw/withdraw",
+            "style" :                                                                                    
+            {
+                "navigationBarTitleText": "領取",
+                "enablePullDownRefresh": false
+            }
+            
+        }
+        ,{
+            "path" : "pages/pledgedetail/pledgedetail",
+            "style" :                                                                                    
+            {
+                "navigationBarTitleText": "質押記錄",
+                "enablePullDownRefresh": false
+            }
+            
+        }
+        ,{
+            "path" : "pages/rankinglist/rankinglist",
+            "style" :                                                                                    
+            {
+                "navigationBarTitleText": "排行榜",
+                "enablePullDownRefresh": false
+            }
+            
+        }
+        ,{
+            "path" : "pages/datashow/datashow",
+            "style" :                                                                                    
+            {
+                "navigationBarTitleText": "數據展示",
+                "enablePullDownRefresh": false
+            }
+            
+        }
+        ,{
+            "path" : "pages/noticeDetail/noticeDetail",
+            "style" :                                                                                    
+            {
+                "navigationBarTitleText": "公告詳情",
+                "enablePullDownRefresh": false
+            }
+            
+        }
+    ],
 	"globalStyle": {
-		"navigationBarTextStyle": "black",
+		"navigationBarTextStyle": "white",
 		"navigationBarTitleText": "LiDo",
-		"navigationBarBackgroundColor": "#F8F8F8",
-		"backgroundColor": "#F8F8F8"
+		"navigationBarBackgroundColor": "#1F1F1F",
+		"backgroundColor": "#1F1F1F"
 	}
 }

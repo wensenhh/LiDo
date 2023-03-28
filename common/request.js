@@ -23,7 +23,6 @@ service.interceptors.request.use(
 			// 给请求头添加user-token
 			config.headers["token"] = uni.getStorageSync('token');
 		}
-		console.log('请求拦截成功')
 		return config;
 	},
 	error => {
@@ -42,14 +41,18 @@ service.interceptors.response.use(res => {
 			name: uni.getStorageSync('address')
 		}).then(res => {
 			console.log('登录成功：', res.data)
-			$tools.toast('登录成功~')
+			$tools.toast('登錄成功~')
 			uni.setStorageSync('token', res.data)
 		})
 	} else {
+		$tools.toast(res.data.msg)
 		return Promise.reject(res.data.msg);
 	}
 }, error => {
+	console.log(error)
+	$tools.toast(`接口${error.config.url}異常~`)
 	if (error.response.code) {
+		console.log('接口異常')
 		switch (error.response.code) {
 			case 401:
 				break;

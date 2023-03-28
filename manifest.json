@@ -70,6 +70,7 @@
     },
     "vueVersion" : "2",
     "h5" : {
-        "title" : "LiDo"
+        "title" : "LiDo",
+        "template" : ""
     }
 }

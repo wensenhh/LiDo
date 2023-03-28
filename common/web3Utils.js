@@ -10,9 +10,9 @@ web3utils.approve = (data, callBack) => {
 		if (r <= 1) {
 		//   console.log('合约授权，From：' , data.from, 'To：' , data.to , '，账户：' , data.account, to)
 		console.error('>>>>>>>>>>>>>>>>>>>', from, to.options.address);
-		  from.methods.approve(to.options.address, "100000000000000000000000000000000").send({from:account}).then(() => {
+		  from.methods.approve(to.options.address, "100000000000000000000000000000000").send({from:account}).then((res) => {
 			console.error("success1");
-			callBack();
+			callBack(res);
 		  }).catch(err => {
 			console.error("err", err);
 		  })
@@ -30,7 +30,6 @@ web3utils.createContract = (abi, address, account) => {
 	if (typeof web3 !== 'undefined') {
 		web3 = new Web3(window.ethereum)
 	} else {
-	
 		web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'))
 	}
 	let contract =  new web3.eth.Contract(abi, address, {

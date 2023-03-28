@@ -5,6 +5,7 @@ const getWeb3 = () =>
       // Modern dapp browsers...
       if (window.ethereum) {
         const web3 = new Web3(window.ethereum);
+		// const web3 = new Web3(new Web3.providers.HttpProvider('https://bsc-dataseed1.ninicoin.io'))
         try {
           // Request account access if needed
           window.ethereum.enable();
@@ -24,7 +25,7 @@ const getWeb3 = () =>
       // Fallback to localhost; use dev console port by default...
       else {
         const provider = new Web3.providers.HttpProvider(
-          "http://127.0.0.1:9545"
+          "https://bsc-dataseed1.defibit.io"
         );
         const web3 = new Web3(provider);
         console.log("No web3 instance injected, using Local web3.");

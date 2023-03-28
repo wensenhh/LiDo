@@ -4,22 +4,23 @@
 		<!-- 轮播组件 -->
 		<Xsuu-swiper :swiperItems="swiperItems" :margin="0" :DotPosition="1" :button="0"></Xsuu-swiper>
 		<!-- 公告组件 -->
-		<zetank-notice :noticeList='noticeList' :interval="3000" @clickNotice="clicktest"></zetank-notice>
+		<zetank-notice :noticeList='noticeList' :interval="3000" @clickNotice="noticeclick"></zetank-notice>
+		<!-- <button @click="hreftpwaller">拉起TP钱包</button> -->
 		<!-- 钱包账户 -->
 		<view class="walletbox">
 			<view class="walletbox-main">
 				<view class="walletbox-main-databox">
-					<view>
-						<view>{{UserMoney.linglu}} <span>≈$100.00</span></view>
+					<view @click="$tools.toastJump('資金明細','/pages/capitaldetail/capitaldetail')">
+						<view>{{UserMoney.linglu}} <span> </span></view>
 						<view>{{$t('index.Zerostroke') + $t('index.wallet')}}(LTC)</view>
 					</view>
 					<view class="walletbox-main-databox-centerbox"></view>
-					<view>
-						<view>{{UserMoney.pledge}} <span>≈$100.00</span></view>
+					<view @click="$tools.toastJump('資金明細','/pages/capitaldetail/capitaldetail',2)">
+						<view>{{UserMoney.pledge}} <span> </span></view>
 						<view>{{$t('index.pledge') + $t('index.wallet')}} (LTC) </view>
 					</view>
 				</view>
-				<view class="walletbox-main-tiqubox">
+				<view class="walletbox-main-tiqubox" @click="$tools.toastJump('領取','/pages/withdraw/withdraw')">
 					{{$t('index.charge')}}
 				</view>
 			</view>
@@ -34,19 +35,26 @@
 		<!-- 领取LTC -->
 		<view class="getbox">
 			<view>{{$t('index.Freeofcharge')}}LTC</view>
-			<view class="" v-if="UserMoney.ifkl == 1" @click="getLqLTC">
+			<view class="active" v-if="UserMoney.ifkl == 1" @click="getLqLTC">
 				{{$t('index.click') + " " + $t('index.Freeofcharge')}} {{UserMoney.klLTC}}LTC
 			</view>
-			<view class="active" v-else>倒计时 {{ countdown }}</view>
+			<view class="" v-else>
+				<block v-if="lefttime > 0">
+					{{$t('index.countdown') + countdown }}
+				</block>
+				<block v-else>
+					{{$t('index.yilingqu')}}
+				</block>
+			</view>
 		</view>
 		<!-- 质押 -->
 		<view class="pledgebox">
 			<view class="pledgebox-onebox">
 				<view>{{$t('index.pledge')}} <span>PLEDGE</span></view>
-				<view @tap="$tools.noOpen()">{{$t('index.mypledgerecord')}} <span> > </span> </view>
+				<view @tap="$tools.toastJump('質押記錄','/pages/pledgedetail/pledgedetail')">{{$t('index.mypledgerecord')}} <span> > </span> </view>
 			</view>
 			<view class="pledgebox-iptbox">
-				<input type="number" :placeholder="$t('index.pledgeusdtnum')">
+				<input type="number" v-model="pledgenum" :placeholder="$t('index.pledgeusdtnum')">
 			</view>
 			<view class="pledgebox-balance">
 				USDT{{$t('index.balance')}}：{{usdtBalance}}
@@ -56,25 +64,29 @@
 					{{item.name}} {{$t('index.day')}}
 				</view>
 			</view>
-			<view class="pledgebox-btnbox" @tap="$tools.noOpen()">
+			<view class="pledgebox-btnbox" v-if="!approveFlag" @tap="ApproveLido">
+				授权/{{$t('index.pledge')}}
+			</view>
+			<view class="pledgebox-btnbox" v-else @tap="pledgefun">
 				{{$t('index.confirm') + $t('index.pledge')}}
 			</view>
 		</view>
 		<!-- 分类 -->
 		<view class="gridbox">
-			<view @tap="$tools.noOpen()">
+			<view @tap="$tools.toastJump($t('index.myteam'),'/pages/myteam/myteam')">
 				<image src="../../static/myteam.png" mode=""></image>
 				<view class="">
 					{{$t('index.myteam')}}
 				</view>
 			</view>
+			<!-- toastJump('數據展示','/pages/datashow/datashow') -->
 			<view @tap="$tools.noOpen()">
 				<image src="../../static/datazhanshi.png" mode=""></image>
 				<view class="">
 					{{$t('index.datapresentation')}}
 				</view>
 			</view>
-			<view @tap="$tools.noOpen()">
+			<view  @tap="$tools.toastJump('排行榜','/pages/rankinglist/rankinglist')">
 				<image src="../../static/phb_icon.png" mode=""></image>
 				<view class="">
 					{{$t('index.rankinglist')}}
@@ -91,43 +103,29 @@
 		usdtaddr,
 		contractaddr,
 		lidoabi,
-		tokenabi
+		tokenabi,
+		textCoin,
+		loginabi,
+		loginaddr
 	} from "@/common/lidoabi";
 	const Web3 = require("@/common/getWeb3");
 	import web3utils from '@/common/web3Utils.js';
+	import { ethers } from "ethers";
 	import {
 		Login,
 		getUserassets,
-		getGiveltc
+		getGiveltc,
+		checkAddress,
+		pledgeapi,
+		getnoticeList,
+		getslideList
 	} from '@/api/api.js';
 	export default {
 		data() {
 			return {
 				systemLocale: '',
 				applicationLocale: '',
-				swiperItems: [{
-						"img": "../../static/banna1.png",
-						"tip": "限时",
-						"url": "111"
-					},{
-						"img": "../../static/banna1.png",
-						"tip": "限时",
-						"url": "111"
-					},{
-						"img": "../../static/banna1.png",
-						"tip": "限时",
-						"url": "111"
-					}
-				],
-				noticeList: [{
-						id: 1,
-						title: 'Lido Finance Litecoin 即將上線！'
-					},
-					{
-						id: 2,
-						title: 'Lido Finance Litecoin 即將上線！'
-					}
-				],
+				swiperItems: [],
 				pledgeDay: [{
 					name: 7,
 					actived: true
@@ -154,14 +152,19 @@
 				},
 				timeall: null,
 				countdown: null,
-				usdtBalance: 0
+				usdtBalance: 0,
+				superiorId: null,
+				lefttime: null,
+				approveFlag: false,
+				pledgenum: null,
+				noticeList: []
 			}
 		},
 		components: {
 			HeaderCom,
 			XsuuSwiper
 		},
-		async onLoad() {
+		async onLoad(option) {
 			let that = this
 			let systemInfo = uni.getSystemInfoSync();
 			this.systemLocale = systemInfo.language;
@@ -170,25 +173,113 @@
 			uni.onLocaleChange((e) => {
 				this.applicationLocale = e.locale;
 			})
+			that.pledgeDayid = that.pledgeDay[0].name// 初始化值
+			if (option.superiorId) {
+				this.superiorId = option.superiorId
+				uni.setStorageSync('superiorId', option.superiorId)
+			} else {
+				return that.$tools.toast('邀请码为空~', 100000, true)
+			}
+			this.$tools.loading('登陸中~', true)
 			// 获取地址
 			uni.setStorageSync('address', "");
+			uni.setStorageSync('token', "");
 			this.address = await this.$tools.getAddress();
 			if (!!this.address) {
 				uni.setStorageSync('address', this.address);
 				if (window.web3.utils) {
+					that.allowance()
 					that.callRegister()
 				} else {
 					that.getWeb3fun(() => {
+						that.allowance()
 						that.callRegister()
 					})
 				}
 			} else {
-				this.$tools.toast('钱包地址获取失败~')
+				uni.hideLoading()
+				that.$tools.toast('錢包地址獲取失敗~', 100000, true)
 			}
 		},
 		methods: {
 			init() {
 				this.getUserMoney() // 获取用户资产
+				this.getnoticeList()
+				this.getslideList()
+			},
+			// 质押lido
+			pledgefun(){
+				let that = this;
+				let web3 = window.web3
+				if(!that.pledgenum){
+					return that.$tools.toast('請輸入正確的質押數量~')
+				}
+				if(Number(that.pledgenum) > that.usdtBalance){
+					return that.$tools.toast('餘額不足，請重新輸入~')
+				}
+				that.$tools.loading('質押中~')
+				// 先調取后台接口
+				pledgeapi({
+					price: that.pledgenum,
+					time: that.pledgeDayid
+				}).then(res => {
+				 	//获取到后台返回的订单号后请求合约
+					const orderid = ethers.utils.toUtf8Bytes(res.obj)
+					try {// Lido质押合约交互
+						let MyContract = new web3.eth.Contract(lidoabi, contractaddr)
+						let pledgenum = web3.utils.toWei(this.pledgenum.toString(), "ether")
+						//转账数量
+						MyContract.methods.swapUSDTforLTC(orderid, pledgenum).send({
+							from: that.address
+						}).then(res => {
+							 console.log("質押成功==",res);
+							 that.$tools.toast('質押成功~')
+							 that.getuserbalance()
+							 that.getUserMoney()
+							 uni.hideLoading()
+						}).catch(err => {
+							console.log('質押失敗~',err)
+							that.$tools.toast('質押失敗~')
+							uni.hideLoading()
+						})
+					} catch (error) {
+						// this.allowanceBalance = 0;
+						console.error("trigger smart contract error", error)
+						uni.hideLoading()
+					}
+				})
+				
+			},
+			// 授权ed
+			async ApproveLido() {
+				let that = this;
+				var web3 = window.web3
+				let data = new Object();
+				data['from'] = new web3.eth.Contract(tokenabi, usdtaddr);
+				data['to'] = new web3.eth.Contract(tokenabi, contractaddr);
+				data['account'] = that.address;
+				web3utils.approve(data, function(res) {
+					console.log(res)
+					that.approveFlag = true;
+					that.allowance()
+					that.$tools.toast('Authorize succeeded')
+				})
+			},
+			async allowance() {
+				// 查询授权额度
+				try {
+					var web3 = window.web3
+					var MyContract = new web3.eth.Contract(tokenabi, usdtaddr)
+					MyContract.methods.allowance(this.address, contractaddr).call().then(
+						res => {
+						let n = web3.utils.fromWei(res, "ether");
+						 console.log("授权数量==",n);
+						 this.approveFlag = n > 0;
+					})
+				} catch (error) {
+					// this.allowanceBalance = 0;
+					console.error("trigger smart contract error", error)
+				}
 			},
 			getUserMoney() {
 				getUserassets().then(res => {
@@ -200,8 +291,10 @@
 					}
 					if (res.obj[0].status !== 1) {
 						let nowdate = new Date();
-						let lefttime = (res.obj[0].timeStmp - nowdate.getTime()) / 1000; // 距离结束时间的秒数
-						this.timeall = lefttime
+						this.lefttime = (res.obj[0].timeStmp - nowdate.getTime()) / 1000; // 距离结束时间的秒数
+						console.log('距离结束时间的秒数=', this.lefttime)
+						if (this.lefttime < 0) return false
+						this.timeall = this.lefttime
 						this.Time()
 					}
 				})
@@ -210,61 +303,98 @@
 				let that = this
 				uni.showModal({
 					title: '提示',
-					content: '你确定要领取LTC吗？',
+					content: '你確定要領取LTC嗎？',
 					success(res) {
 						if (res.confirm) {
 							getGiveltc().then(res => {
-
 								that.getUserMoney() // 获取用户资产
-								return that.$tools.toast('领取成功~')
+								return that.$tools.toast('領取成功~')
 							})
 						}
 					}
 				})
 			},
-			callRegister(callback) {
+			hreftpwaller(){
+				let params = {
+					"url": decodeURI(`https://dapp.mytokenpocket.vip/referendum/index.html#/`),
+					"chain": decodeURI("BSC")
+				}
+				// params = decodeURI(params)
+				console.log(params)
+				// return false
+				window.location.href=`tpdapp://open?params=${params}`
+			},
+			callRegister() {
 				let that = this;
-				try {
-					let web3 = window.web3
-					let MyContract = web3utils.createContract(lidoabi, contractaddr, this.address)
-					let tokenContract = web3utils.createContract(tokenabi, usdtaddr, this.address)
-					tokenContract.methods.balanceOf(that.address).call({
-						from: that.address
-					}, function(error, result) {
-						that.usdtBalance = Number(web3.utils.fromWei(result, 'ether')).toFixed(4)
-					});
-					MyContract.methods.getRegister(this.address).call().then(res => {
-						console.log('是否注册=', res)
-						if (!res) {
-							const bnbnum = web3.utils.toWei('0.003', "ether")
-							MyContract.methods.register().send({
-								from: this.address,
-								value: bnbnum
-							}).then(res => {
-								console.log('注册成功=', res)
-								// 调取后台注册接口
-								that.getUserLogin()
-							}).catch(err => {
-								console.log('注册失败=', res)
-							})
-						} else {
+				let web3 = window.web3
+				let MyContract = new web3.eth.Contract(loginabi, loginaddr)
+				checkAddress({
+					address: that.address
+				}).then(res => {
+					console.log('是否注册=', res.obj)
+					that.getuserbalance()
+					if (!res.obj) {
+						const bnbnum = web3.utils.toWei('0.003', "ether")
+						MyContract.methods.register().send({
+							from: this.address,
+							value: bnbnum
+						}).then(res => {
+							console.log('注册成功=', res)
 							// 调取后台注册接口
 							that.getUserLogin()
-						}
+						}).catch(err => {
+							uni.hideLoading()
+							that.$tools.toast('Gas费不足~', 100000, true)
+							console.log('注册失败=', res)
+						})
+					} else {
+						// 调取后台注册接口
+						that.getUserLogin()
+					}
+				})
+				// try {
+				// 	MyContract.methods.getRegister(this.address).call().then(res => {})
+				// } catch (error) {
+				// 	console.error("trigger smart contract error", error)
+				// }
+			},
+			getuserbalance(){
+				let that = this
+				let tokenContract = new web3.eth.Contract(tokenabi, usdtaddr)
+				// let tokenContract = web3utils.createContract(tokenabi, usdtaddr, this.address)
+				tokenContract.methods.balanceOf(that.address).call({
+					from: that.address
+				}, function(error, result) {
+					that.usdtBalance = Number(web3.utils.fromWei(result, 'ether')).toFixed(4)
+				});
+			},
+			getslideList(){
+				getslideList().then(res => {
+					let list = res.obj;
+					let newarr = []
+					list.forEach(item => {
+						newarr.push({
+							img: item.path
+						})
 					})
-				} catch (error) {
-					console.error("trigger smart contract error", error)
-				}
+					this.swiperItems = newarr
+				})
 			},
 			getUserLogin(callback) {
 				Login({
 					name: this.address,
-					parentName: 'ui2eae'
+					parentName: this.superiorId || ''
 				}).then(res => {
 					uni.setStorageSync('token', res.obj.token);
 					uni.setStorageSync('userId', res.obj.id);
-					this.$tools.toast('登录成功~')
+					uni.hideLoading()
+					this.$tools.toast('登錄成功~')
 					this.init()
+				})
+			},
+			getnoticeList(){
+				getnoticeList().then(res => {
+					this.noticeList = res.obj.list
 				})
 			},
 			getWeb3fun(callback) {
@@ -275,6 +405,9 @@
 					console.log("getWeb3", res);
 					return callback && callback()
 				})
+			},
+			noticeclick(item){
+				this.$tools.jump('/pages/noticeDetail/noticeDetail',item.id)
 			},
 			//定时器没过1秒参数减1
 			Time() {
@@ -300,14 +433,14 @@
 				s = s < 10 ? "0" + s : s;
 				console.log(d + "天" + h + "时" + m + "分" + s + "秒");
 				this.timeall = value
-				this.countdown = h + "时" + m + "分" + s + "秒"
+				this.countdown = h + "時" + m + "分" + s + "秒"
 			},
 			changeTime(i) {
 				let arr = this.pledgeDay
 				arr.forEach((item, index) => {
 					index === i ? item.actived = true : item.actived = false
 				})
-				// this.pledgeDayid = arr[i].id //初始化数据时需设置该值
+				this.pledgeDayid = arr[i].name //初始化数据时需设置该值
 				this.pledgeDay = arr
 			},
 		}
@@ -315,11 +448,6 @@
 </script>
 
 <style lang="scss">
-	.container {
-		background-color: #1F1F1F;
-		min-height: 100vh;
-	}
-
 	.walletbox {
 		width: 100%;
 		background-color: #00D383;

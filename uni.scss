@@ -133,7 +133,7 @@ $uni-font-size-paragraph:15px;
 	display: flex;
 	justify-content: space-between;
 	flex-wrap: wrap;
-	align-items: space-between;
+	// align-items: center;
 }
 
 @mixin justifiedLayout {
