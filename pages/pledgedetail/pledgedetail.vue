@@ -39,8 +39,8 @@
 		            src="../../static/logo.png"
 		          />
 		        </view>
-				<view class="flex-col justify-start items-center button" @click="getRedeem(item)" v-if="item.status == 4"><text class="font_1" >立即贖回</text></view>
-				<view class="flex-col justify-start items-center button" @click="getEarning(item.id)" v-else><text class="font_1" >立即領取</text></view>
+				<view class="flex-col justify-start items-center button" style="background-color: #1e5676;" @click="getRedeem(item)" v-if="item.status == 4"><text class="font_1" >贖回</text></view>
+				<view class="flex-col justify-start items-center button" @click="getEarning(item)" v-else><text class="font_1" >領取</text></view>
 		      </view>
 			  <view class="nomore" v-if="pledgeList.length === 0">
 					暫無數據~
@@ -67,6 +67,7 @@
 		getEarnings,
 		getRedeem
 	} from '@/api/api.js';
+	const Base64 = require('js-base64').Base64
 	export default {
 		data() {
 			return {
@@ -78,18 +79,40 @@
 			this.getpledgeInfo()
 		},
 		methods: {
-			getEarning(id){
-				let that = this;
+			async getEarning(item){
+				let that = this
+				if(item.earnings == 0){
+					return that.$tools.toast('當前訂單暫無收益可領取~')
+				}
+				const signkey = await that.$tools.signMessage('receive award')
+				try{
+					const signres = await this.$tools.verifyMessage({
+						message: 'receive award',
+						address: that.address,
+						signature: signkey
+					})
+					console.log(signres)
+					if(!signres){
+						return false
+					}
+				}catch(e){
+					//TODO handle the exception
+					console.log("用户拒绝签名")
+					return false
+				}
+				
 				uni.showModal({
 					title: '提示',
 					content: '您確定要領取當前質押收益嗎？',
 					success(res) {
 						if(res.confirm){
+							that.$tools.loading('領取中~')
 							getEarnings({
-								id: id
+								id: item.id
 							}).then(res => {
 								that.getpledgeInfo()
 								that.$tools.toast('領取成功~')
+								uni.hideLoading()
 							})
 						}
 					}
@@ -112,10 +135,11 @@
 								let amount = web3.utils.toWei(obj.amount.toString(), "ether")
 								console.log(amount, obj.timeStmp, obj.signer, obj.desc)
 								try {
-									let MyContract = new web3.eth.Contract(lidoabi, textCoin.pledge)
-									MyContract.methods.withdraw(amount, obj.timeStmp, obj.signer, obj.desc).send({
-										from: that.address
-									}).then(res => {
+									let provider = new ethers.providers.Web3Provider(window.ethereum);
+									const signer = provider.getSigner();
+									let MyContract = new ethers.Contract(contractaddr, lidoabi, signer);
+									const signerres = Base64.decode(obj.signer);
+									MyContract.withdraw(amount, obj.timeStmp, signerres, obj.desc).then(res => {
 										 console.log("赎回成功==",res);
 										 uni.hideLoading()
 										 that.getpledgeInfo()
@@ -136,8 +160,10 @@
 				})
 			},
 			getpledgeInfo(){
+				this.$tools.loading('數據加載中~')
 				pledgeInfo().then(res => {
 					this.pledgeList = res.obj.list
+					uni.hideLoading()
 				})
 			}
 		}
@@ -164,6 +190,8 @@
 	        padding: 30.77rpx 23.08rpx;
 	        background-color: #272727;
 	        border-radius: 15.38rpx;
+			position: relative;
+			overflow: hidden;
 	        .image_4 {
 	          width: 46.15rpx;
 	          height: 46.15rpx;
@@ -259,12 +287,17 @@
 	          }
 	        }
 	        .button {
-	          margin-top: 19.23rpx;
-	          padding: 30.77rpx 0;
-	          background-color: #00d383;
-	          border-radius: 7.69rpx;
+				width: 160rpx;
+				height: 90rpx;
+	          padding: 26rpx 40rpx;
+			  align-items: flex-start !important;
+	          background-color: #00a362;
+	          border-radius: 90% 0% 0% 0%;
+			  position: absolute;
+			  right: -52rpx;
+			  bottom: -28rpx;
 	          .font_1 {
-	            font-size: 32.69rpx;
+	            font-size: 26rpx;
 	            font-family: MiSans;
 	            line-height: 30.77rpx;
 	            color: #ffffff;

@@ -2,9 +2,123 @@ var tp = require('tp-js-sdk')
 const {
 	ethereum
 } = window;
+import {
+	ethers
+} from "ethers";
 const chain_name = 'bsc';
 const chain_id = 56;
 const tools = {};
+
+// tools.throttle = async (func, delay) => {
+// 	var timer = null;
+// 	return function() {
+// 		debugger
+// 		var that = this;
+// 		var args = arguments
+// 		if (!timer) {
+// 			timer = setTimeout(function() {
+// 				//执行事件处理程序
+// 				func.call(that, args)
+// 				//事件执行完后把定时器清除掉，下次触发事件的时候再设置
+// 				timer = null;
+// 			}, delay)
+// 		}
+// 	}
+// }
+
+/**
+ * 防抖原理：一定时间内，只有最后一次操作，再过wait毫秒后才执行函数
+ * 
+ * @param {Function} func 要执行的回调函数 
+ * @param {Number} wait 延时的时间
+ * @param {Boolean} immediate 是否立即执行 
+ * @return null
+ */
+let timeout = null;
+tools.debounce = async (func, wait = 500, immediate = false) => {
+	// 清除定时器
+	if (timeout !== null) clearTimeout(timeout);
+	// 立即执行，此类情况一般用不到
+	if (immediate) {
+		var callNow = !timeout;
+		timeout = setTimeout(function() {
+			timeout = null;
+		}, wait);
+		if (callNow) typeof func === 'function' && func();
+	} else {
+		// 设置定时器，当最后一次操作后，timeout不会再被清除，所以在延时wait毫秒后执行func回调方法
+		timeout = setTimeout(function() {
+			typeof func === 'function' && func();
+		}, wait);
+	}
+}
+
+/**
+ * 节流原理：在一定时间内，只能触发一次
+ * 
+ * @param {Function} func 要执行的回调函数 
+ * @param {Number} wait 延时的时间
+ * @param {Boolean} immediate 是否立即执行
+ * @return null
+ */
+let timer, flag;
+tools.throttle = async (func, wait = 500, immediate = true) => {
+	if (immediate) {
+		if (!flag) {
+			flag = true;
+			// 如果是立即执行，则在wait毫秒内开始时执行
+			typeof func === 'function' && func();
+			timer = setTimeout(() => {
+				flag = false;
+			}, wait);
+		}
+	} else {
+		if (!flag) {
+			flag = true
+			// 如果是非立即执行，则在wait毫秒内的结束处执行
+			timer = setTimeout(() => {
+				flag = false
+				typeof func === 'function' && func();
+			}, wait);
+		}
+	}
+}
+
+tools.getNetWorkId = async () => {
+	const web3 = window.web3
+	var coinid = null
+	web3.eth.net.getId().then((res)=>{
+		console.log(res)
+		coinid = res
+	})
+	return coinid
+}
+
+tools.signMessage = async (message) => {
+	const provider = await new ethers.providers.Web3Provider(window.ethereum)
+	const signer = await provider.getSigner();
+	const address = tools.getAddress();
+	const result = await signer.signMessage(message);
+	console.log(result)
+	return result;
+};
+
+tools.verifyMessage = async ({
+	message,
+	address,
+	signature
+}) => {
+	try {
+		const signerAddr = await ethers.utils.verifyMessage(message, signature);
+		if (signerAddr.toLowerCase() !== address.toLowerCase()) {
+			return false;
+		}
+		return true;
+	} catch (err) {
+		console.log(err);
+		return false;
+	}
+}
 
 tools.getAddress = async () => {
 	let isTpWallet = tp.isConnected();
@@ -25,9 +139,11 @@ tools.getAddress = async () => {
 }
 
 async function getChainId() {
-	ethereum.request({ method: 'eth_chainId' }).then((result) => {
-	    	console.log(result);
-	   	});
+	ethereum.request({
+		method: 'eth_chainId'
+	}).then((result) => {
+		console.log(result);
+	});
 	//！链id不是马上拿到的，如果通过链id来判断是不是主网的方式，请注意异步
 }
 
@@ -52,6 +168,24 @@ tools.changeNetwork = async () => {
 		}
 	}
 }
+
+tools.metaMaskWallet = async (chainId) => {
+    try {
+        await ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{
+                'chainId': ethers.utils.hexValue(chainId),
+            }]
+        });
+    } catch (error) {
+        if (error.code === 4902 && chainId == 56) {
+            await addBscNetwork();
+        } else {
+            throw '切换网络失败';
+        }
+    }
+}
+
 async function metaMaskPermiss() {
 	await ethereum.request({
 		method: 'wallet_requestPermissions',

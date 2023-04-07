@@ -12,7 +12,7 @@ const service = axios.create({
 	baseURL: webUrl.webUrl, // url = base url + request url
 	// baseURL: 'http://localhost:8000',
 	//withCredentials: true, // send cookies when cross-domain requests 注意：withCredentials和后端配置的cross跨域不可同时使用
-	timeout: 6000, // request timeout
+	timeout: 10000, // request timeout
 	crossDomain: true,
 })
 

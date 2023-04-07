@@ -263,3 +263,87 @@ export function getslideList(data) {
 		params: data,
 	})
 }
+
+/**
+ * 取消提币
+ * @param {*} data 
+ */
+export function canceltibi(data) {
+	return service({
+		url: '/front/financial/deleteExtract',
+		method: 'post',
+		params: data,
+	})
+}
+
+/**
+ * 排行榜置顶数据
+ * @param {*} data 
+ */
+export function tatolRankingList(data) {
+	return service({
+		url: '/front/financial/tatolRankingList',
+		method: 'post',
+		params: data,
+	})
+}
+
+/**
+ * LTT币种详情
+ * @param {*} data 
+ */
+export function coininfo(data) {
+	return service({
+		url: '/front/ltt/lttList',
+		method: 'post',
+		params: data,
+	})
+}
+
+/**
+ * 可兑换LTC数量
+ * @param {*} data 
+ */
+export function ltcexchangenum(data) {
+	return service({
+		url: '/front/financial/exchangeInfo',
+		method: 'post',
+		params:data,
+	})
+}
+
+/**
+ * 兑换
+ * @param {*} data 
+ */
+export function exchangefun(data) {
+	return service({
+		url: '/front/financial/exchange',
+		method: 'post',
+		params: data,
+	})
+}
+
+/**
+ * K綫
+ * @param {*} data 
+ */
+export function klinedata(data) {
+	return service({
+		url: '/front/change/k_xian',
+		method: 'post',
+		params: data,
+	})
+}
+
+/**
+ * 获取ltt余额
+ * @param {*} data 
+ */
+export function lttbalance(data) {
+	return service({
+		url: '/front/financial/lttList',
+		method: 'post',
+		params: data,
+	})
+}

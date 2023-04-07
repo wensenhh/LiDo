@@ -6,19 +6,19 @@
 		<view class="teambox" v-for="item in teamList">
 			<view class="teambox-user">
 				<view class="teambox-user-left">
-					<image :src="item.url" mode=""></image><span>{{item.userName | hideaddress(item.userName)}}</span>
-					<view class="teambox-user-left-bgimg" v-if="item.level > 0">
-						<image :src="'../../static/tx' + item.level + '.png'" mode=""></image>
+					<image :src="'../../static/user' + item.node + '.png'" mode=""></image><span>{{item.userName | hideaddress(item.userName)}}</span>
+					<view class="teambox-user-left-bgimg" v-if="item.zyLevel > 0">
+						<image :src="'../../static/tx' + item.zyLevel + '.png'" mode=""></image>
 					</view>
 				</view>
 				<view class="teambox-user-right">
-					初级节点
+					业绩：{{item.yeji}}
 				</view>
 			</view>
 			<view class="teambox-level">
 				<view>{{$t('index.lingluqu') + $t('index.level')}} L{{item.level}}</view>
 				<view class="teambox-level-center"></view>
-				<view>{{$t('index.zhiyaqu') + $t('index.level')}} L{{item.level}}</view>
+				<view>{{$t('index.zhiyaqu') + $t('index.level')}} L{{item.zyLevel || 0}}</view>
 			</view>
 			<view class="teambox-main" v-if="teamif === 1">
 				<view>

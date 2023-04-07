@@ -5,7 +5,7 @@
 				<view class="content"
 					:style="{height:height+'rpx',marginLeft:margin+'rpx',marginRight:margin+'rpx',borderRadius:borderRadius+'rpx'}">
 					<image :src="item.img" mode="aspectFill" class="swiper-img"></image>
-					<view class="mask"></view>
+					<!-- <view class="mask"></view> -->
 					<view class="written">
 						<text v-if="item.title" class="Text-initialization overflow" :style="{fontSize: titleFontSize+'rpx',color:titleColor}"
 							:class="[index === enjoySiwper ? 'title' : '']">

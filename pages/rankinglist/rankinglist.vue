@@ -2,6 +2,14 @@
 	<view class="container">
 		<view class="flex-col justify-start items-start flex-auto group_3">
 			<view class="flex-col pos_2">
+				<view class="topbarbox">
+					<view>TOP縂池</view>
+					<view>{{ranktop.total}}</view>
+				</view>
+				<view class="topbarbox">
+					<view>當前待分紅</view>
+					<view>{{ranktop.newPrice}}</view>
+				</view>
 				<view class="flex-row justify-between items-center list-item" style="background-color: #272727;">
 					<view class="flex-row items-center space-x-12">
 						<view class="rankboxi" v-if="userrank.index<3">
@@ -10,20 +18,21 @@
 						<view class="rankboxi" v-else>
 							{{userrank.index + 1}}
 						</view>
-						<image class="image_5"
-							:src="userrank.img" />
+						
+						<image class="usertoux" :src="'../../static/user' + userrank.node + '.png'" mode=""></image>
 						<view class="flex-col items-start space-y-10">
 							<text class="font_2">{{userrank.name | hideaddress(userrank.name)}}</text>
 							<text class="font_5">{{userrank.ran}}</text>
 						</view>
 					</view>
 					<view class="flex-row space-x-6">
-						<text class="font_3">今日業績</text>
+						<text class="font_3">貢獻值</text>
 						<text class="font_4 text_3">${{userrank.sum}}</text>
 					</view>
 				</view>
+				
 				<block :key="i" v-for="(item, i) in rankList">
-					<view class="flex-row justify-between items-center list-item" v-if="i<10">
+					<view class="flex-row justify-between items-center list-item" v-if="i<3">
 						<view class="flex-row items-center space-x-12">
 							<view class="rankboxi" v-if="i<3">
 								<image :src="'../../static/rankicon' + (i+1) + '.png'" mode=""></image>
@@ -31,15 +40,16 @@
 							<view class="rankboxi" v-else>
 								{{i+1}}
 							</view>
-							<image class="image_5"
-								:src="item.img" />
+							<!-- <image class="image_5"
+								:src="item.img" /> -->
+							<image class="usertoux" :src="'../../static/user' + item.node + '.png'" mode=""></image>
 							<view class="flex-col items-start space-y-10">
 								<text class="font_2">{{item.name | hideaddress(item.name)}}</text>
 								<text class="font_5">{{item.ran}}</text>
 							</view>
 						</view>
 						<view class="flex-row space-x-6">
-							<text class="font_3">今日業績</text>
+							<text class="font_3">貢獻值</text>
 							<text class="font_4 text_3">${{item.sum}}</text>
 						</view>
 					</view>
@@ -54,24 +64,37 @@
 
 <script>
 	import {
-		getrankList
+		getrankList,
+		tatolRankingList
 	} from '@/api/api.js';
 	export default {
 		data() {
 			return {
 				rankList: [],
 				address: uni.getStorageSync('address'),
-				userrank: {}
+				userrank: {},
+				ranktop: {}
 			};
 		},
 		onLoad() {
+			this.tatolRankingList()
 			this.getrankList()
 		},
 		methods: {
+			tatolRankingList(){
+				tatolRankingList().then(res => {
+					this.ranktop = res.obj
+				})
+			},
 			getrankList() {
 				this.$tools.loading('數據加載中~')
 				getrankList().then(res => {
 					let list = res.obj
+					this.userrank.index = 0
+					this.userrank.node = 0
+					this.userrank.name = this.address
+					this.userrank.ran = ''
+					this.userrank.sum = 0
 					list.forEach((item,i) => {
 						if(item.name == this.address){
 							console.log(i)
@@ -90,9 +113,23 @@
 
 <style lang="scss">
 	.group_3 {
+		.topbarbox{
+			@include flexBetween;
+			width: 100%;
+			height: 80rpx;
+			background-color: #272727;
+			color: #ffffff;
+			padding: 0 30rpx;
+			border-bottom: 1px #1F1F1F solid;
+		}
 		.nomore{
 				  @include flexCenter;
-				  color: #ffffff;
+				  color: #c7c7c7;
+				  margin-top: 300rpx;
+		}
+		.usertoux{
+			width: 80rpx;
+			height: 80rpx
 		}
 		.rankboxi {
 			@include flexCenter;

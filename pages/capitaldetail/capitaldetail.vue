@@ -29,7 +29,7 @@
 							<text class="font_2">{{item.typeStr}}</text>
 							<text class="font_4">{{item.money}}</text>
 						</view>
-						<text class="self-start font_5">{{item.createTime}}</text>
+						<text class="self-start font_5">{{item.updateTime}}</text>
 					</view>
 					<view class="nomore" v-if="zichanList.length === 0">
 						暫無數據~
@@ -73,6 +73,7 @@
 		},
 		methods: {
 			getassetsTotal() {
+				this.$tools.loading('數據加載中~')
 				getassetsTotal({
 					assetType: this.tabbarnow
 				}).then(res => {
@@ -82,6 +83,7 @@
 							using: item.list[0].using
 						})
 					})
+					uni.hideLoading()
 				})
 			},
 			getzcList() {

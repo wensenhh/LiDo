@@ -7,15 +7,17 @@
 						<view class="flex-row items-center list-item space-x-14">
 							<text class="font_2">链类型</text>
 							<view class="flex-row justify-between items-center flex-auto section">
-								<ld-select :list="ChainTypeList" label-key="label" value-key="value" placeholder="请选择" v-model="ChainTypenow"
-									@change="selectChange" bgColor="#272727" selectColor="#00D383" selectBgColor="272727" color="#ffffff"></ld-select>
+								<ld-select :list="ChainTypeList" label-key="label" value-key="value" placeholder="请选择"
+									v-model="ChainTypenow" @change="selectChange" bgColor="#272727"
+									selectColor="#00D383" selectBgColor="272727" color="#ffffff"></ld-select>
 							</view>
 						</view>
 						<view class="flex-row items-center list-item space-x-14">
 							<text class="font_2">領取钱包</text>
 							<view class="flex-row justify-between items-center flex-auto section">
-								<ld-select :list="assetsList" label-key="label" value-key="value" placeholder="请选择" v-model="assetsnow"
-									@change="selectChange" bgColor="#272727" selectColor="#00D383" selectBgColor="272727" color="#ffffff"></ld-select>
+								<ld-select :list="assetsList" label-key="label" value-key="value" placeholder="请选择"
+									v-model="assetsnow" @change="selectChange" bgColor="#272727" selectColor="#00D383"
+									selectBgColor="272727" color="#ffffff"></ld-select>
 							</view>
 						</view>
 					</view>
@@ -23,9 +25,11 @@
 				</view>
 				<view class="flex-row justify-between group_4">
 					<text class="font_3">可領取数量：{{applyinfo.applynum}}</text>
-					<text class="font_3">手续费：{{applyinfo.servicecharge}}%</text>
+					<text class="font_3" v-if="assetsnow===1">手續費：{{applyinfo.servicecharge}}%</text>
+					<text class="font_3" v-if="assetsnow===2">算力：{{applyinfo.servicecharge}}%</text>
 				</view>
-				<button class="button" @click="withdraw">領取</button>
+				<button class="button" v-if="!approveFlag" @tap="ApproveLido">{{$t('index.signature')}}</button>
+				<button class="button" v-else @click="debounce(withdraw,1000)">領取</button>
 				<view class="flex-col group_5 space-y-18">
 					<text class="self-start font_1 text_4">我的領取记录</text>
 					<view class="flex-col space-y-12">
@@ -35,11 +39,14 @@
 							<text class="font_4">{{item.quantity}}</text>
 							<text class="font_5">{{item.createTime}}</text>
 						</view>
+						<view class="nomore" v-if="applyList.length === 0">
+							暫無數據~
+						</view>
 					</view>
 				</view>
 			</view>
 		</view>
-		
+
 	</view>
 </template>
 
@@ -58,16 +65,19 @@
 		getChainType,
 		userwithdraw,
 		getApplyLog,
-		getApplyset
+		getApplyset,
+		canceltibi
 	} from '@/api/api.js';
+	const Base64 = require('js-base64').Base64
+	import {
+		ethers
+	} from "ethers";
 	export default {
 		components: {
 			ldSelect
 		},
 		data() {
 			return {
-				list_rtnrOLl1: [null, null],
-				list_2vsFHnmh: [null, null, null, null, null, null, null, null],
 				assetsList: [],
 				assetsnow: null,
 				withdrawnum: null,
@@ -77,21 +87,58 @@
 					applynum: 0,
 					servicecharge: 0
 				},
-				applyList: []
+				applyList: [],
+				address: uni.getStorageSync('address'),
+				timeout: null,
+				approveFlag: false,
 			};
 		},
 		onLoad() {
-			this.getChaintype(),// 获取网络链
-			this.getassets()// 获取钱包列表
+			this.allowance()
+			this.getChaintype(), // 获取网络链
+				this.getassets() // 获取钱包列表
 		},
 		watch: {
-			assetsnow(nowval,oldval){
+			assetsnow(nowval, oldval) {
 				this.getApplyLog()
 				this.getApplyset()
 			}
 		},
 		methods: {
-			getApplyset(){
+			// 授权ed
+			async ApproveLido() {
+				let that = this;
+				let data = new Object();
+				let provider = new ethers.providers.Web3Provider(window.ethereum);
+				const signer = provider.getSigner();
+				data['from'] = new ethers.Contract(usdtaddr, tokenabi, signer);
+				data['to'] = new ethers.Contract(contractaddr, tokenabi, signer);
+				data['account'] = that.address;
+				web3utils.approve(data, function(res) {
+					console.log(res)
+					that.approveFlag = true;
+					that.allowance()
+					that.$tools.toast('Authorize succeeded')
+				})
+			},
+			async allowance() {
+				// 查询授权额度
+				try {
+					let provider = new ethers.providers.Web3Provider(window.ethereum);
+					const signer = provider.getSigner();
+					let MyContract = new ethers.Contract(usdtaddr, tokenabi, signer);
+					MyContract.allowance(this.address, contractaddr).then(
+						res => {
+							let n = Number(ethers.utils.formatEther(res.toString()));
+							console.log("授权数量==", n);
+							this.approveFlag = n > 0;
+						})
+				} catch (error) {
+					// this.allowanceBalance = 0;
+					console.error("trigger smart contract error", error)
+				}
+			},
+			getApplyset() {
 				getApplyset({
 					assetType: this.assetsnow
 				}).then(res => {
@@ -101,60 +148,71 @@
 					}
 				})
 			},
-			getApplyLog(){
+			getApplyLog() {
 				getApplyLog({
 					assetType: this.assetsnow
 				}).then(res => {
 					this.applyList = res.obj.list
 				})
 			},
-			withdraw(){
-				if(!this.withdrawnum){
-					return this.$tools.toast('請輸入正確的提現數量')
+			async withdraw() {
+				let that = this
+				let web3 = window.web3
+				if (!this.withdrawnum) {
+					return this.$tools.toast('請輸入正確的領取數量')
 				}
-				if(this.withdrawnum < 0.1){
+				if (this.withdrawnum < 0.1) {
 					return this.$tools.toast('最少領取0.1')
 				}
-				if(!this.assetsnow){
+				if (!this.assetsnow) {
 					return this.$tools.toast('請選擇錢包')
 				}
-				if(!this.ChainTypenow){
+				if (!this.ChainTypenow) {
 					return this.$tools.toast('請選擇链類型')
 				}
+				that.$tools.loading('領取中~')
 				userwithdraw({
 					address: uni.getStorageSync('address'),
 					quantity: this.withdrawnum,
 					walletType: this.assetsnow,
 					chadType: this.ChainTypenow
 				}).then(res => {
-					this.$tools.toast('提現成功~')
-					this.getApplyLog()
-					this.getApplyset()
-					return false
-					try{
-						let web3 = window.web3
-						let MyContract = web3utils.createContract(lidoabi, usdtaddr, this.address)
-						const withdrawnum = web3.utils.toWei(this.withdrawnum, "ether")
-						MyContract.methods.withdraw({
+					let obj = res.obj
+					try {
+						let provider = new ethers.providers.Web3Provider(window.ethereum);
+						const signer = provider.getSigner();
+						let MyContract = new ethers.Contract(contractaddr, lidoabi, signer);
+						let amount = web3.utils.toWei((obj.price).toString(), "ether")
+						const signerres = Base64.decode(obj.signer);
+						console.log(amount, obj.time, signerres, obj.dec)
+						MyContract.withdraw(amount, obj.time, signerres, obj.dec).then(res => {
+							console.log("領取成功==", res);
+							this.getApplyLog()
+							this.getApplyset()
+							uni.hideLoading()
+							return that.$tools.toast('領取成功~')
+						}).catch(err => {
+							this.getApplyLog()
+							this.getApplyset()
+							uni.hideLoading()
+							return that.$tools.toast('領取失败~')
+							// console.log("領取失敗==", err);
+							// uni.hideLoading()
+							// return that.$tools.toast('領取失敗~')
+						})
+					} catch (error) {
+						canceltibi({
+							id: obj.id
+						}).then(res => {
 							
-						}).send({
-								from: this.address
-							}).then(res => {
-								console.log('注册成功=', res)
-								// 调取后台注册接口
-								that.getUserLogin()
-							}).catch(err => {
-								uni.hideLoading()
-								that.$tools.toast('Gas费不足~',100000,true)
-								console.log('注册失败=', res)
-							})
-					}catch(e){
-						//TODO handle the exception
+						})
+						that.$tools.toast('合約交互失敗~', error)
+						uni.hideLoading()
+						console.error("trigger smart contract error", error)
 					}
-					
 				})
 			},
-			getChaintype(){
+			getChaintype() {
 				getChainType().then(res => {
 					let list = res.obj
 					list.forEach(item => {
@@ -166,7 +224,21 @@
 					this.ChainTypenow = list[0].id
 				})
 			},
-			getassets(){
+			/**
+			 * 防抖：在事件被触发n秒后再执行回调，如果在这n秒内又被触发，则重新计时。等待触发事件n秒内不再触发事件才执行。
+			 * @param {Function} func 要执行的回调函数
+			 * @param {Number} wait 延时的时间 默认500
+			 */
+			debounce(func, wait = 500) {
+				// 清除定时器
+				if (this.timeout !== null) clearTimeout(this.timeout);
+				//设置定时器
+				this.timeout = setTimeout(() => {
+					typeof func === 'function' && func()
+				}, wait);
+			},
+			getassets() {
+				this.$tools.loading('數據加載中~')
 				getassetsTotal().then(res => {
 					let list = res.obj
 					list.forEach(item => {
@@ -176,6 +248,7 @@
 						})
 					})
 					this.assetsnow = list[0].type
+					uni.hideLoading()
 				})
 			},
 			selectChange(val) {
@@ -193,6 +266,12 @@
 		overflow-x: hidden;
 		height: 100%;
 		min-height: 100vh;
+
+		.nomore {
+			@include flexCenter;
+			color: #c8c8c8;
+			margin-top: 100rpx;
+		}
 
 		.group_3 {
 			padding: 17.31rpx 23.08rpx 182.69rpx 30.77rpx;

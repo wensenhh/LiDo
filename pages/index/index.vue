@@ -20,9 +20,22 @@
 						<view>{{$t('index.pledge') + $t('index.wallet')}} (LTC) </view>
 					</view>
 				</view>
-				<view class="walletbox-main-tiqubox" @click="$tools.toastJump('領取','/pages/withdraw/withdraw')">
-					{{$t('index.charge')}}
+				<view class="walletbox-main-toolbox">
+					<view>
+						<view class="walletbox-main-tiqubox"
+							@click="$tools.toastJump($t('index.charge'),'/pages/withdraw/withdraw')">
+							{{$t('index.charge')}}
+						</view>
+					</view>
+					<view>
+						<!-- toastJump('兌換','/pages/exchange/exchange') -->
+						<view class="walletbox-main-tiqubox" style="background-color: #F2A611;"
+							@click="$tools.noOpen()">
+							{{$t('index.conversion')}}
+						</view>
+					</view>
 				</view>
+
 			</view>
 		</view>
 		<!-- 钱包地址 -->
@@ -51,7 +64,10 @@
 		<view class="pledgebox">
 			<view class="pledgebox-onebox">
 				<view>{{$t('index.pledge')}} <span>PLEDGE</span></view>
-				<view @tap="$tools.toastJump('質押記錄','/pages/pledgedetail/pledgedetail')">{{$t('index.mypledgerecord')}} <span> > </span> </view>
+				<view @tap="$tools.toastJump($t('index.pledge')+$t('index.record'),'/pages/pledgedetail/pledgedetail')">
+					{{$t('index.mypledgerecord')}}
+					<span> > </span>
+				</view>
 			</view>
 			<view class="pledgebox-iptbox">
 				<input type="number" v-model="pledgenum" :placeholder="$t('index.pledgeusdtnum')">
@@ -65,9 +81,9 @@
 				</view>
 			</view>
 			<view class="pledgebox-btnbox" v-if="!approveFlag" @tap="ApproveLido">
-				授权/{{$t('index.pledge')}}
+				{{$t('index.signature')}}/{{$t('index.pledge')}}
 			</view>
-			<view class="pledgebox-btnbox" v-else @tap="pledgefun">
+			<view class="pledgebox-btnbox" v-else @tap="debounce(pledgefun,1000)">
 				{{$t('index.confirm') + $t('index.pledge')}}
 			</view>
 		</view>
@@ -80,13 +96,13 @@
 				</view>
 			</view>
 			<!-- toastJump('數據展示','/pages/datashow/datashow') -->
-			<view @tap="$tools.noOpen()">
+			<view @tap="$tools.toastJump($t('index.dataDisplay'),'/pages/datashow/datashow')">
 				<image src="../../static/datazhanshi.png" mode=""></image>
 				<view class="">
 					{{$t('index.datapresentation')}}
 				</view>
 			</view>
-			<view  @tap="$tools.toastJump('排行榜','/pages/rankinglist/rankinglist')">
+			<view @tap="$tools.toastJump($t('index.rankinglist'),'/pages/rankinglist/rankinglist')">
 				<image src="../../static/phb_icon.png" mode=""></image>
 				<view class="">
 					{{$t('index.rankinglist')}}
@@ -110,7 +126,9 @@
 	} from "@/common/lidoabi";
 	const Web3 = require("@/common/getWeb3");
 	import web3utils from '@/common/web3Utils.js';
-	import { ethers } from "ethers";
+	import {
+		ethers
+	} from "ethers";
 	import {
 		Login,
 		getUserassets,
@@ -157,7 +175,8 @@
 				lefttime: null,
 				approveFlag: false,
 				pledgenum: null,
-				noticeList: []
+				noticeList: [],
+				timeout: null
 			}
 		},
 		components: {
@@ -173,14 +192,14 @@
 			uni.onLocaleChange((e) => {
 				this.applicationLocale = e.locale;
 			})
-			that.pledgeDayid = that.pledgeDay[0].name// 初始化值
+			that.pledgeDayid = that.pledgeDay[0].name // 初始化值
 			if (option.superiorId) {
 				this.superiorId = option.superiorId
 				uni.setStorageSync('superiorId', option.superiorId)
 			} else {
-				return that.$tools.toast('邀请码为空~', 100000, true)
+				return that.$tools.toast(that.$t('index.invitenodata'), 100000, true)
 			}
-			this.$tools.loading('登陸中~', true)
+			this.$tools.loading(that.$t('index.landing'), true)
 			// 获取地址
 			uni.setStorageSync('address', "");
 			uni.setStorageSync('token', "");
@@ -198,7 +217,7 @@
 				}
 			} else {
 				uni.hideLoading()
-				that.$tools.toast('錢包地址獲取失敗~', 100000, true)
+				that.$tools.toast(that.$t('index.wallteerror'), 100000, true)
 			}
 		},
 		methods: {
@@ -206,57 +225,61 @@
 				this.getUserMoney() // 获取用户资产
 				this.getnoticeList()
 				this.getslideList()
+				this.getuserbalance()
 			},
 			// 质押lido
-			pledgefun(){
+			pledgefun() {
 				let that = this;
 				let web3 = window.web3
-				if(!that.pledgenum){
-					return that.$tools.toast('請輸入正確的質押數量~')
+				if (!that.pledgenum) {
+					return that.$tools.toast(that.$t('index.pledgenumjy'))
 				}
-				if(Number(that.pledgenum) > that.usdtBalance){
-					return that.$tools.toast('餘額不足，請重新輸入~')
+				if (Number(that.pledgenum) > that.usdtBalance) {
+					return that.$tools.toast(that.$t('index.balanceno'))
 				}
-				that.$tools.loading('質押中~')
+				that.$tools.loading(that.$t('index.pledgeing'))
 				// 先調取后台接口
 				pledgeapi({
 					price: that.pledgenum,
 					time: that.pledgeDayid
 				}).then(res => {
-				 	//获取到后台返回的订单号后请求合约
+					//获取到后台返回的订单号后请求合约
 					const orderid = ethers.utils.toUtf8Bytes(res.obj)
-					try {// Lido质押合约交互
-						let MyContract = new web3.eth.Contract(lidoabi, contractaddr)
+					try { // Lido质押合约交互
+						let provider = new ethers.providers.Web3Provider(window.ethereum);
+						const signer = provider.getSigner();
+						let MyContract = new ethers.Contract(contractaddr, lidoabi, signer);
 						let pledgenum = web3.utils.toWei(this.pledgenum.toString(), "ether")
-						//转账数量
-						MyContract.methods.swapUSDTforLTC(orderid, pledgenum).send({
-							from: that.address
-						}).then(res => {
-							 console.log("質押成功==",res);
-							 that.$tools.toast('質押成功~')
-							 that.getuserbalance()
-							 that.getUserMoney()
-							 uni.hideLoading()
+						//转账数量  质押合约调用
+						MyContract.swapUSDTforLTC(orderid, pledgenum).then(res => {
+							console.log("質押成功==", res);
+							that.$tools.toast('質押成功~')
+							that.getuserbalance()
+							that.getUserMoney()
+							uni.hideLoading()
 						}).catch(err => {
-							console.log('質押失敗~',err)
-							that.$tools.toast('質押失敗~')
+							console.log('質押失敗~', err)
+							console.log('質押失敗=', err.message)
+							that.$tools.toast('質押失敗~', err.message)
 							uni.hideLoading()
 						})
+
 					} catch (error) {
 						// this.allowanceBalance = 0;
 						console.error("trigger smart contract error", error)
 						uni.hideLoading()
 					}
 				})
-				
+
 			},
 			// 授权ed
 			async ApproveLido() {
 				let that = this;
-				var web3 = window.web3
 				let data = new Object();
-				data['from'] = new web3.eth.Contract(tokenabi, usdtaddr);
-				data['to'] = new web3.eth.Contract(tokenabi, contractaddr);
+				let provider = new ethers.providers.Web3Provider(window.ethereum);
+				const signer = provider.getSigner();
+				data['from'] = new ethers.Contract(usdtaddr, tokenabi, signer);
+				data['to'] = new ethers.Contract(contractaddr, tokenabi, signer);
 				data['account'] = that.address;
 				web3utils.approve(data, function(res) {
 					console.log(res)
@@ -268,14 +291,15 @@
 			async allowance() {
 				// 查询授权额度
 				try {
-					var web3 = window.web3
-					var MyContract = new web3.eth.Contract(tokenabi, usdtaddr)
-					MyContract.methods.allowance(this.address, contractaddr).call().then(
+					let provider = new ethers.providers.Web3Provider(window.ethereum);
+					const signer = provider.getSigner();
+					let MyContract = new ethers.Contract(usdtaddr, tokenabi, signer);
+					MyContract.allowance(this.address, contractaddr).then(
 						res => {
-						let n = web3.utils.fromWei(res, "ether");
-						 console.log("授权数量==",n);
-						 this.approveFlag = n > 0;
-					})
+							let n = Number(ethers.utils.formatEther(res.toString()));
+							console.log("授权数量==", n);
+							this.approveFlag = n > 0;
+						})
 				} catch (error) {
 					// this.allowanceBalance = 0;
 					console.error("trigger smart contract error", error)
@@ -299,8 +323,17 @@
 					}
 				})
 			},
-			getLqLTC() {
+			async getLqLTC() {
 				let that = this
+				// const signkey = await that.$tools.signMessage('receive award LTC')
+				// const signres = await this.$tools.verifyMessage({
+				// 	message: 'receive award LTC',
+				// 	address: that.address,
+				// 	signature: signkey
+				// })
+				// if(!signres){
+				// 	return false
+				// }
 				uni.showModal({
 					title: '提示',
 					content: '你確定要領取LTC嗎？',
@@ -314,7 +347,7 @@
 					}
 				})
 			},
-			hreftpwaller(){
+			hreftpwaller() {
 				let params = {
 					"url": decodeURI(`https://dapp.mytokenpocket.vip/referendum/index.html#/`),
 					"chain": decodeURI("BSC")
@@ -322,30 +355,32 @@
 				// params = decodeURI(params)
 				console.log(params)
 				// return false
-				window.location.href=`tpdapp://open?params=${params}`
+				window.location.href = `tpdapp://open?params=${params}`
 			},
 			callRegister() {
 				let that = this;
 				let web3 = window.web3
-				let MyContract = new web3.eth.Contract(loginabi, loginaddr)
+				let provider = new ethers.providers.Web3Provider(window.ethereum);
+				const signer = provider.getSigner();
+				let MyContract = new ethers.Contract(loginaddr, loginabi, signer);
 				checkAddress({
 					address: that.address
 				}).then(res => {
 					console.log('是否注册=', res.obj)
-					that.getuserbalance()
 					if (!res.obj) {
 						const bnbnum = web3.utils.toWei('0.003', "ether")
-						MyContract.methods.register().send({
-							from: this.address,
-							value: bnbnum
+						MyContract.register({
+							value: bnbnum,
+							gasLimit: 210000
 						}).then(res => {
 							console.log('注册成功=', res)
+							uni.hideLoading()
 							// 调取后台注册接口
 							that.getUserLogin()
 						}).catch(err => {
 							uni.hideLoading()
 							that.$tools.toast('Gas费不足~', 100000, true)
-							console.log('注册失败=', res)
+							console.log('注册失败=', err)
 						})
 					} else {
 						// 调取后台注册接口
@@ -358,17 +393,16 @@
 				// 	console.error("trigger smart contract error", error)
 				// }
 			},
-			getuserbalance(){
+			async getuserbalance() {
 				let that = this
-				let tokenContract = new web3.eth.Contract(tokenabi, usdtaddr)
-				// let tokenContract = web3utils.createContract(tokenabi, usdtaddr, this.address)
-				tokenContract.methods.balanceOf(that.address).call({
-					from: that.address
-				}, function(error, result) {
-					that.usdtBalance = Number(web3.utils.fromWei(result, 'ether')).toFixed(4)
-				});
+				let provider = new ethers.providers.Web3Provider(window.ethereum);
+				const signer = provider.getSigner();
+				let tokenContract = new ethers.Contract(usdtaddr, tokenabi, signer);
+				let balance = await tokenContract.balanceOf(that.address);
+				console.log('餘額=', ethers.utils.formatEther(balance.toString()));
+				that.usdtBalance = Number(ethers.utils.formatEther(balance.toString())).toFixed(4)
 			},
-			getslideList(){
+			getslideList() {
 				getslideList().then(res => {
 					let list = res.obj;
 					let newarr = []
@@ -381,18 +415,19 @@
 				})
 			},
 			getUserLogin(callback) {
+				let that = this
 				Login({
-					name: this.address,
-					parentName: this.superiorId || ''
+					name: that.address,
+					parentName: that.superiorId || ''
 				}).then(res => {
 					uni.setStorageSync('token', res.obj.token);
 					uni.setStorageSync('userId', res.obj.id);
 					uni.hideLoading()
-					this.$tools.toast('登錄成功~')
-					this.init()
+					that.$tools.toast('登錄成功~')
+					that.init()
 				})
 			},
-			getnoticeList(){
+			getnoticeList() {
 				getnoticeList().then(res => {
 					this.noticeList = res.obj.list
 				})
@@ -403,11 +438,25 @@
 				Web3.default.getWeb3().then((res) => {
 					window.web3 = res;
 					console.log("getWeb3", res);
+					// let netres = that.$tools.changeNetwork()
 					return callback && callback()
 				})
 			},
-			noticeclick(item){
-				this.$tools.jump('/pages/noticeDetail/noticeDetail',item.id)
+			/**
+			 * 防抖：在事件被触发n秒后再执行回调，如果在这n秒内又被触发，则重新计时。等待触发事件n秒内不再触发事件才执行。
+			 * @param {Function} func 要执行的回调函数
+			 * @param {Number} wait 延时的时间 默认500
+			 */
+			debounce(func, wait = 500) {
+				// 清除定时器
+				if (this.timeout !== null) clearTimeout(this.timeout);
+				//设置定时器
+				this.timeout = setTimeout(() => {
+					typeof func === 'function' && func()
+				}, wait);
+			},
+			noticeclick(item) {
+				this.$tools.jump('/pages/noticeDetail/noticeDetail', item.id)
 			},
 			//定时器没过1秒参数减1
 			Time() {
@@ -417,8 +466,8 @@
 						that.getUserMoney()
 						clearInterval(inter)
 					}
-					this.timeall -= 1
-					that.countDown(this.timeall)
+					that.timeall -= 1
+					that.countDown(that.timeall)
 				}, 1000)
 			},
 			//计算倒计时时间
@@ -460,6 +509,15 @@
 			background-color: #272727;
 			border-radius: 10rpx;
 			padding: 32rpx 24rpx;
+
+			&-toolbox {
+				@include flexBetween;
+
+				>view {
+					@include flexCenter;
+					width: 49%;
+				}
+			}
 
 			&-databox {
 				@include flexGrid;

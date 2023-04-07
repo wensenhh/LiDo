@@ -16,7 +16,7 @@ Vue.prototype.$axios = axios
 
 // 隐藏地址
 Vue.filter('hideaddress',(addr) => {
-	return addr.slice(0,10) + '***' + addr.slice(-6)
+	return addr.slice(0,8) + '***' + addr.slice(-6)
 })
 
 // #ifndef VUE3
