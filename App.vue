@@ -13,6 +13,9 @@
 </script>
 
 <style>
+	html{
+		background-color: #1F1F1F;
+	}
   .container {
     padding: 15px;
 	background-color: #1F1F1F;

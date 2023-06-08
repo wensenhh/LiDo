@@ -9,23 +9,6 @@ const chain_name = 'bsc';
 const chain_id = 56;
 const tools = {};
 
-// tools.throttle = async (func, delay) => {
-// 	var timer = null;
-// 	return function() {
-// 		debugger
-// 		var that = this;
-// 		var args = arguments
-// 		if (!timer) {
-// 			timer = setTimeout(function() {
-// 				//执行事件处理程序
-// 				func.call(that, args)
-// 				//事件执行完后把定时器清除掉，下次触发事件的时候再设置
-// 				timer = null;
-// 			}, delay)
-// 		}
-// 	}
-// }
-
 /**
  * 防抖原理：一定时间内，只有最后一次操作，再过wait毫秒后才执行函数
  * 
@@ -41,13 +24,13 @@ tools.debounce = async (func, wait = 500, immediate = false) => {
 	// 立即执行，此类情况一般用不到
 	if (immediate) {
 		var callNow = !timeout;
-		timeout = setTimeout(function() {
+		timeout = setTimeout(function () {
 			timeout = null;
 		}, wait);
 		if (callNow) typeof func === 'function' && func();
 	} else {
 		// 设置定时器，当最后一次操作后，timeout不会再被清除，所以在延时wait毫秒后执行func回调方法
-		timeout = setTimeout(function() {
+		timeout = setTimeout(function () {
 			typeof func === 'function' && func();
 		}, wait);
 	}
@@ -85,21 +68,20 @@ tools.throttle = async (func, wait = 500, immediate = true) => {
 }
 
 tools.getNetWorkId = async () => {
-	const web3 = window.web3
-	var coinid = null
-	web3.eth.net.getId().then((res)=>{
-		console.log(res)
-		coinid = res
-	})
-	return coinid
+	try {
+		const chainId = await ethereum.request({
+			method: "eth_chainId"
+		});
+		return chainId
+	} catch (err) {
+		console.error(err);
+	}
 }
 
 tools.signMessage = async (message) => {
 	const provider = await new ethers.providers.Web3Provider(window.ethereum)
 	const signer = await provider.getSigner();
-	const address = tools.getAddress();
 	const result = await signer.signMessage(message);
-	console.log(result)
 	return result;
 };
 
@@ -138,15 +120,6 @@ tools.getAddress = async () => {
 	}
 }
 
-async function getChainId() {
-	ethereum.request({
-		method: 'eth_chainId'
-	}).then((result) => {
-		console.log(result);
-	});
-	//！链id不是马上拿到的，如果通过链id来判断是不是主网的方式，请注意异步
-}
-
 tools.changeNetwork = async () => {
 	let isMetamaskWallet = ethereum && ethereum.isMetaMask;
 	let isTpWallet = tp.isConnected();
@@ -170,20 +143,20 @@ tools.changeNetwork = async () => {
 }
 
 tools.metaMaskWallet = async (chainId) => {
-    try {
-        await ethereum.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{
-                'chainId': ethers.utils.hexValue(chainId),
-            }]
-        });
-    } catch (error) {
-        if (error.code === 4902 && chainId == 56) {
-            await addBscNetwork();
-        } else {
-            throw '切换网络失败';
-        }
-    }
+	try {
+		await ethereum.request({
+			method: 'wallet_switchEthereumChain',
+			params: [{
+				'chainId': ethers.utils.hexValue(chainId),
+			}]
+		});
+	} catch (error) {
+		if (error.code === 4902 && chainId == 56) {
+			await addBscNetwork();
+		} else {
+			throw '切换网络失败';
+		}
+	}
 }
 
 async function metaMaskPermiss() {
@@ -237,9 +210,7 @@ tools.pathBack = (path) => {
 
 	let prevPage = pages[pageIndex];
 
-	uni.navigateBack({
-		delta: (pages.length - (pageIndex + 1))
-	}) //返回到列表页面
+	tools.back((pages.length - (pageIndex + 1)))
 };
 
 // 复制
@@ -259,14 +230,6 @@ tools.copy = (val) => {
 
 // 提示
 tools.toast = (title, duration = 1500, mask = false, icon = 'none') => {
-	// uni.showToast({
-	// 	title: title,
-	// 	icon: "none",
-	// 	mask: true,
-	// 	duration: "1000",
-	// 	position: 'bottom'
-	// })
-
 	uni.showToast({
 		title: title,
 		duration: duration,
@@ -332,17 +295,11 @@ tools.toastJump = (title, path, value1, value2, value3, value4, value5) => {
 		string += '&value5=' + value5;
 	}
 
-	setTimeout(function() {
+	setTimeout(function () {
 		uni.navigateTo({
 			url: path + string
 		})
 	}, 1000);
-}
-
-tools.switchTab = (path) => {
-	uni.switchTab({
-		url: path
-	});
 }
 
 tools.redirectTo = (path) => {
@@ -351,25 +308,6 @@ tools.redirectTo = (path) => {
 	});
 }
 
-tools.toastSwitchTab = (title, path) => {
-	uni.showToast({
-		title: title,
-		icon: "none",
-		duration: 80000,
-		position: 'bottom'
-	})
-	setTimeout(function() {
-		uni.switchTab({
-			url: path
-		});
-	}, 1000);
-}
-
-tools.reLaunch = (path) => {
-	uni.reLaunch({
-		url: path
-	});
-}
 // js精度加法
 tools.accAdd = (arg1, arg2) => {
 	var r1, r2, m;
@@ -412,10 +350,10 @@ tools.accMul = (arg1, arg2) => {
 		s2 = arg2.toString();
 	try {
 		m += s1.split(".")[1].length;
-	} catch (e) {}
+	} catch (e) { }
 	try {
 		m += s2.split(".")[1].length;
-	} catch (e) {}
+	} catch (e) { }
 
 	return (Number(s1.replace(".", "")) * Number(s2.replace(".", ""))) / Math.pow(10, m);
 }
@@ -428,10 +366,10 @@ tools.accDiv = (arg1, arg2) => {
 		r2;
 	try {
 		t1 = arg1.toString().split(".")[1].length;
-	} catch (e) {}
+	} catch (e) { }
 	try {
 		t2 = arg2.toString().split(".")[1].length;
-	} catch (e) {}
+	} catch (e) { }
 	r1 = Number(arg1.toString().replace(".", ""));
 	r2 = Number(arg2.toString().replace(".", ""));
 	if (r2 == 0) {
@@ -474,18 +412,18 @@ tools.formatTime = (value, type) => {
 }
 
 tools.formatTime2 = (value) => {
-		var timeValue = value.replace(/-/g, "/");
-		var T_pos = timeValue.indexOf('T');
-		var year_month_day = timeValue.substr(0, T_pos);
-		var hour_minute_second = timeValue.substr(T_pos + 1, 8);
-		var new_datetime = year_month_day + " " + hour_minute_second;
-		var dateee = new Date(new_datetime).toJSON();
-		var sjc = new Date(dateee).getTime();
-		var chinaT = sjc + 8 * 3600 * 1000;
+	var timeValue = value.replace(/-/g, "/");
+	var T_pos = timeValue.indexOf('T');
+	var year_month_day = timeValue.substr(0, T_pos);
+	var hour_minute_second = timeValue.substr(T_pos + 1, 8);
+	var new_datetime = year_month_day + " " + hour_minute_second;
+	var dateee = new Date(new_datetime).toJSON();
+	var sjc = new Date(dateee).getTime();
+	var chinaT = sjc + 8 * 3600 * 1000;
 
-		var date = tools.formatTime(chinaT, 'YMDHMS');
-		return date;
-	},
+	var date = tools.formatTime(chinaT, 'YMDHMS');
+	return date;
+},
 	tools.number = (value, type) => {
 		if (value == null || value == '') {
 			value = 0;

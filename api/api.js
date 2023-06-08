@@ -85,6 +85,18 @@ export function getzichanInfo(data) {
 }
 
 /**
+ * 资产明细下拉选项
+ * @param {*} data 
+ */
+export function getzichanSelet(data) {
+	return service({
+		url: '/front/financial/getLogType',
+		method: 'post',
+		params: data,
+	})
+}
+
+/**
  * 链类型
  * @param {*} data 
  */
@@ -343,6 +355,30 @@ export function klinedata(data) {
 export function lttbalance(data) {
 	return service({
 		url: '/front/financial/lttList',
+		method: 'post',
+		params: data,
+	})
+}
+
+/**
+ * 一键领取所有收益
+ * @param {*} data 
+ */
+export function lqallearnings(data) {
+	return service({
+		url: '/front/change/getEarningsAll',
+		method: 'post',
+		params: data,
+	})
+}
+
+/**
+ * NFT购买
+ * @param {*} data 
+ */
+export function nftbuy(data) {
+	return service({
+		url: '/front/card/buyCard',
 		method: 'post',
 		params: data,
 	})

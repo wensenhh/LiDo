@@ -30,7 +30,7 @@
 					<view>
 						<!-- toastJump('兌換','/pages/exchange/exchange') -->
 						<view class="walletbox-main-tiqubox" style="background-color: #F2A611;"
-							@click="$tools.noOpen()">
+							@click="$tools.toastJump('兌換','/pages/exchange/exchange')">
 							{{$t('index.conversion')}}
 						</view>
 					</view>
@@ -38,6 +38,10 @@
 
 			</view>
 		</view>
+		<!-- <view class="nftbox" @click="$tools.toastJump('NFT','/pages/buynft/buynft')">
+			<img class="image_7"
+				src="https://codefun-proj-user-res-1256085488.cos.ap-guangzhou.myqcloud.com/641bf7ba5a7e3f031045ebb8/642140ff99e5b100119c4d77/16844011661799690452.png" />
+		</view> -->
 		<!-- 钱包地址 -->
 		<view class="addressbox">
 			<view>
@@ -80,8 +84,9 @@
 					{{item.name}} {{$t('index.day')}}
 				</view>
 			</view>
+			<!-- {{$t('index.signature')}}/ -->
 			<view class="pledgebox-btnbox" v-if="!approveFlag" @tap="ApproveLido">
-				{{$t('index.signature')}}/{{$t('index.pledge')}}
+				{{$t('index.confirm') + $t('index.pledge')}}
 			</view>
 			<view class="pledgebox-btnbox" v-else @tap="debounce(pledgefun,1000)">
 				{{$t('index.confirm') + $t('index.pledge')}}
@@ -146,7 +151,7 @@
 				swiperItems: [],
 				pledgeDay: [{
 					name: 7,
-					actived: true
+					actived: false
 				}, {
 					name: 30,
 					actived: false
@@ -158,7 +163,7 @@
 					actived: false
 				}, {
 					name: 360,
-					actived: false
+					actived: true
 				}],
 				pledgeDayid: null,
 				address: '',
@@ -192,7 +197,8 @@
 			uni.onLocaleChange((e) => {
 				this.applicationLocale = e.locale;
 			})
-			that.pledgeDayid = that.pledgeDay[0].name // 初始化值
+			that.pledgeDayid = that.pledgeDay[4].name // 初始化值
+			console.log(that.pledgeDayid)
 			if (option.superiorId) {
 				this.superiorId = option.superiorId
 				uni.setStorageSync('superiorId', option.superiorId)
@@ -285,7 +291,7 @@
 					console.log(res)
 					that.approveFlag = true;
 					that.allowance()
-					that.$tools.toast('Authorize succeeded')
+					// that.$tools.toast('Authorize succeeded')
 				})
 			},
 			async allowance() {
@@ -368,7 +374,7 @@
 				}).then(res => {
 					console.log('是否注册=', res.obj)
 					if (!res.obj) {
-						const bnbnum = web3.utils.toWei('0.003', "ether")
+						const bnbnum = web3.utils.toWei('0.001', "ether")
 						MyContract.register({
 							value: bnbnum,
 							gasLimit: 210000
@@ -456,7 +462,7 @@
 				}, wait);
 			},
 			noticeclick(item) {
-				this.$tools.jump('/pages/noticeDetail/noticeDetail', item.id)
+				this.$tools.jump('/pages/noticeDetail/noticeList')
 			},
 			//定时器没过1秒参数减1
 			Time() {
@@ -489,6 +495,7 @@
 				arr.forEach((item, index) => {
 					index === i ? item.actived = true : item.actived = false
 				})
+				console.log(arr[i])
 				this.pledgeDayid = arr[i].name //初始化数据时需设置该值
 				this.pledgeDay = arr
 			},
@@ -497,6 +504,12 @@
 </script>
 
 <style lang="scss">
+	.nftbox{
+		margin-top: 30rpx;
+		img{
+			width: 100%;
+		}
+	}
 	.walletbox {
 		width: 100%;
 		background-color: #00D383;
@@ -727,6 +740,7 @@
 			font-size: 30rpx;
 			font-weight: bold;
 			color: #ffffff;
+			overflow: hidden;
 
 			>image {
 				width: 48rpx;

@@ -6,6 +6,7 @@
 export const usdtaddr = '0x55d398326f99059ff775485246999027b3197955'
 export const loginaddr = '0x9Fa83044988EDe1FC0a5b0381F79298C20b9FA75'
 export const contractaddr = '0x5fE7a2460a50a481f9942BD53D93388352aCF4a8'
+export const ltcaddr = '0x4338665CBB7B2485A8855A139b75D5e34AB0DB94'
 // 0x9Fa83044988EDe1FC0a5b0381F79298C20b9FA75
 export const textCoin = {
 	usdtaddr: '0x38C93854cB671bE1A23b2D9E86d892253EE4a725', // usdt测试链合约地址

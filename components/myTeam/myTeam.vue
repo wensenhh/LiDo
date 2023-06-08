@@ -12,7 +12,7 @@
 					</view>
 				</view>
 				<view class="teambox-user-right">
-					业绩：{{item.yeji}}
+					{{$t('index.yeji')}}：{{item.yeji}}
 				</view>
 			</view>
 			<view class="teambox-level">

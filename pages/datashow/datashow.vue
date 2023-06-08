@@ -16,27 +16,27 @@
 					</view>
 					<view class="flex-row" style="flex-flow: wrap">
 						<view class="flex-row items-center grid-item space-x-8">
-							<text class="font_3">我的LTT</text>
+							<text class="font_3">{{$t('datashow.my')}}LTT</text>
 							<text class="font_2">{{coininfo.ltt}}</text>
 						</view>
 						<view class="flex-row items-center grid-item space-x-8">
-							<text class="font_3">個人算力</text>
+							<text class="font_3">{{$t('datashow.personpower')}}</text>
 							<text class="font_2">{{coininfo.hashrate}}</text>
 						</view>
 						<view class="flex-row items-center grid-item space-x-8">
-							<text class="font_3">縂發行</text>
+							<text class="font_3">{{$t('datashow.allgross')}}</text>
 							<text class="font_2">{{coininfo.gross}}</text>
 						</view>
 						<view class="flex-row items-center grid-item space-x-8">
-							<text class="font_3">流通量</text>
+							<text class="font_3">{{$t('datashow.turnover')}}</text>
 							<text class="font_2">{{coininfo.sent}}</text>
 						</view>
 						<view class="flex-row items-center grid-item space-x-8">
-							<text class="font_3">今日產出</text>
+							<text class="font_3">{{$t('datashow.Outputtoday')}}</text>
 							<text class="font_2">{{coininfo.newSent}}</text>
 						</view>
 						<view class="flex-row items-center grid-item space-x-8">
-							<text class="font_3">全網算力</text>
+							<text class="font_3">{{$t('datashow.totalnet')}}</text>
 							<text class="font_2">{{coininfo.allHashrate}}</text>
 						</view>
 					</view>
@@ -47,19 +47,19 @@
 			<view class="flex-col justify-start">
 				<view class="flex-col list">
 					<view class="flex-row justify-between items-center list-item">
-						<text class="font_4">全網LTC總額</text>
+						<text class="font_4">{{$t('datashow.allnet')}} LTC {{$t('datashow.rental')}}</text>
 						<text class="font_2">{{coininfo.tatolLtc}}</text>
 					</view>
 					<view class="flex-row justify-between items-center list-item">
-						<text class="font_4">保險倉LTC總額</text>
+						<text class="font_4">{{$t('datashow.safedeposit')}} LTC {{$t('datashow.rental')}}</text>
 						<text class="font_2">{{coininfo.tatolBxcLtc}}</text>
 					</view>
 					<view class="flex-row justify-between items-center list-item">
-						<text class="font_4">永動池LTC總額</text>
+						<text class="font_4">{{$t('datashow.Permanentcell')}} LTC {{$t('datashow.rental')}}</text>
 						<text class="font_2">{{coininfo.fomoPool}}</text>
 					</view>
 					<view class="flex-row justify-between items-center list-item">
-						<text class="font_4">TOP排行榜LTC總額</text>
+						<text class="font_4">TOP {{$t('datashow.ranklist')}} LTC {{$t('datashow.rental')}}</text>
 						<text class="font_2">{{coininfo.topLtc}}</text>
 					</view>
 				</view>
@@ -109,7 +109,7 @@
 				})
 			},
 			coindetail() {
-				this.$tools.loading('數據加載中~')
+				this.$tools.loading(this.$t('index.dataloading'))
 				coininfo().then(res => {
 					let obj = res.obj
 					this.coininfo = obj
@@ -123,10 +123,10 @@
 			async getKlinedata() {
 				let option = {
 					xAxis: {
-						data: this.linedata.date,
+						data: this.linedata.date.slice(-30),
 					},
 					series: [{
-						data: this.linedata.open
+						data: this.linedata.open.slice(-30)
 					}]
 				}
 				// 这里不要忘记把option设置给echarts实例
@@ -139,7 +139,7 @@
 				var option = {
 					grid: [{
 							top: '8%',
-							left: 20,
+							left: 30,
 							right: 20,
 							height: '82%',
 						}
@@ -278,8 +278,12 @@
 	.font_3 {
 		font-size: 28.85rpx;
 		font-family: MiSans;
-		line-height: 26.92rpx;
 		color: #808080;
+		width: 48%;
+		height: 36rpx;
+		overflow: hidden;
+		text-overflow:ellipsis;    
+		white-space:nowrap;
 	}
 
 	.group_6 {
@@ -310,7 +314,11 @@
 
 	.flex-row {
 		>view {
-			width: 49%
+			width: 49%;
+			overflow: hidden;
+			height: 60rpx;
+			text-overflow:ellipsis;    
+			white-space:nowrap;
 		}
 	}
 </style>

@@ -5,26 +5,26 @@
 				<view class="flex-row self-center section">
 					<view
 						:class="['flex-col','justify-start','items-center',tabbarnow == 1 ? 'text-wrapper' : 'text-wrapper_2'] "
-						@click="tabbarnow = 1"><text class="font_2 text_3">零撸錢包</text></view>
+						@click="tabbarnow = 1"><text class="font_2 text_3">{{$t('capital.llqb')}}</text></view>
 					<view
 						:class="['flex-col','justify-start','items-center',tabbarnow == 2 ? 'text-wrapper' : 'text-wrapper_2'] "
 						@click="tabbarnow = 2">
-						<text class="font_2 text_3">質押錢包</text>
+						<text class="font_2 text_3">{{$t('capital.pledgeqb')}}</text>
 					</view>
 				</view>
 				<view class="flex-row justify-between items-center section_2">
 					<view class="flex-row items-baseline space-x-2">
-						<text class="font_2 text_5">可用餘額</text>
-						<text class="font_1 text_6">{{assetList[tabbarnow].using || 0}} LTC</text>
+						<text class="font_2 text_5">{{$t('capital.kyye')}}</text>
+						<text class="font_1 text_6">{{(assetList[tabbarnow].using).toFixed(4) || 0}} LTC</text>
 					</view>
-					<view class="flex-row items-center section_3 space-x-30">
-						<ld-select :list="options" label-key="label" value-key="value" placeholder="請選擇" v-model="value"
+					<view class="flex-row items-center section_3 space-x-30" style="overflow: hidden;">
+						<ld-select :list="seletList" label-key="name" value-key="key" :placeholder="$t('capital.qxz')" v-model="value"
 							@change="selectChange" bgColor="#272727" selectColor="#00D383" selectBgColor="272727"
 							color="#ffffff"></ld-select>
 					</view>
 				</view>
 				<view class="flex-col list">
-					<view class="flex-col list-item space-y-12" :key="item.id" v-for="(item, i) in zichanList">
+					<view class="flex-col list-item space-y-12" :key="i" v-for="(item, i) in zichanList">
 						<view class="flex-row justify-between">
 							<text class="font_2">{{item.typeStr}}</text>
 							<text class="font_4">{{item.money}}</text>
@@ -32,7 +32,7 @@
 						<text class="self-start font_5">{{item.updateTime}}</text>
 					</view>
 					<view class="nomore" v-if="zichanList.length === 0">
-						暫無數據~
+						{{$t('index.nomoredata')}}~
 					</view>
 				</view>
 			</view>
@@ -43,37 +43,87 @@
 <script>
 	import {
 		getzichanInfo,
-		getassetsTotal
+		getassetsTotal,
+		getzichanSelet
 	} from '@/api/api.js';
 	export default {
 		data() {
 			return {
 				tabbarnow: 1,
 				zichanList: [],
-				value: '1',
-				options: [{
-					value: '1',
-					label: '全部'
-				}],
+				value: '0',
 				assetList: [{
 					using: 0
-				}]
+				}],
+				seletList: [],
+				queryObj: {
+					pagenum: 1,
+					pagesize: 10
+				},
+				isloading: false,
+				total: 0
 			};
 		},
 		onLoad(option) {
-			if (option.value1) this.tabbarnow = option.value1;
-			this.getzcList()
+			if (option.value1){
+				this.tabbarnow = option.value1
+			}else{
+				this.getzcList()
+			}
+			this.getzcSelet()
 			this.getassetsTotal()
 		},
 		watch: {
 			tabbarnow(newval, oldval) {
+				// 1. 重置关键数据
+				this.queryObj.pagenum = 1
+				this.total = 0
+				this.isloading = false
+				this.zichanList = []
 				this.getzcList()
 				this.getassetsTotal()
 			}
 		},
+		// 触底的事件
+		onReachBottom() {
+			if (this.queryObj.pagenum * this.queryObj.pagesize >= this.total){
+				this.isloading = true
+				return this.$tools.toast(this.$t('capital.dataend'))
+			} 
+		
+			if (this.isloading) return
+		
+			// 让页码值自增+1
+			this.queryObj.pagenum++
+			this.getzcList()
+		},
+		// 下拉刷新的事件
+		onPullDownRefresh() {
+		  // 1. 重置关键数据
+		  this.queryObj.pagenum = 1
+		  this.total = 0
+		  this.isloading = false
+		  this.zichanList = []
+		 
+		  // 2. 重新发起请求
+		  this.getzcList(() => uni.stopPullDownRefresh())
+		},
 		methods: {
+			getzcSelet(){
+				getzichanSelet({
+					assetType: this.tabbarnow
+				}).then(res => {
+					let list = res.obj
+					list.unshift({
+						name: this.$t('with.qb'),
+						key: '0'
+					})
+					this.seletList = list
+					// this.getzcList()
+				})
+			},
 			getassetsTotal() {
-				this.$tools.loading('數據加載中~')
+				this.$tools.loading(this.$t('index.dataloading'))
 				getassetsTotal({
 					assetType: this.tabbarnow
 				}).then(res => {
@@ -86,12 +136,30 @@
 					uni.hideLoading()
 				})
 			},
-			getzcList() {
+			getzcList(cb) {
 				getzichanInfo({
-					assetType: this.tabbarnow
+					assetType: this.tabbarnow,
+					pageNum: this.queryObj.pagenum,
+					pageSize: this.queryObj.pagesize,
+					type: this.value == 0 ? '' : this.value
 				}).then(res => {
-					this.zichanList = res.obj.list
+					this.isloading = false
+					let list = res.obj.list
+					cb && cb()
+					this.zichanList = [...this.zichanList, ...list]
+					this.total = res.obj.total
 				})
+			},
+			selectChange(e){
+				console.log(e)
+				this.value = e
+				// 1. 重置关键数据
+				this.queryObj.pagenum = 1
+				this.total = 0
+				this.isloading = false
+				this.zichanList = []
+				
+				this.getzcList()
 			},
 		}
 	}
@@ -137,7 +205,7 @@
 					padding: 15.38rpx 0;
 					flex: 1 1 153.85rpx;
 					border-radius: 7.69rpx;
-					width: 153.85rpx;
+					width: 228rpx;
 					height: 61.54rpx;
 
 					.text_4 {

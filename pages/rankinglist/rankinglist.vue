@@ -3,11 +3,11 @@
 		<view class="flex-col justify-start items-start flex-auto group_3">
 			<view class="flex-col pos_2">
 				<view class="topbarbox">
-					<view>TOP縂池</view>
+					<view>TOP{{$t('rank.Masterpool')}}</view>
 					<view>{{ranktop.total}}</view>
 				</view>
 				<view class="topbarbox">
-					<view>當前待分紅</view>
+					<view>{{$t('rank.curdividend')}}</view>
 					<view>{{ranktop.newPrice}}</view>
 				</view>
 				<view class="flex-row justify-between items-center list-item" style="background-color: #272727;">
@@ -15,22 +15,26 @@
 						<view class="rankboxi" v-if="userrank.index<3">
 							<image :src="'../../static/rankicon' + (userrank.index+1) + '.png'" mode=""></image>
 						</view>
+						<view class="rankboxi" v-else-if="userrank.index == 5201314" style="width: 0;">
+							
+						</view>
 						<view class="rankboxi" v-else>
 							{{userrank.index + 1}}
 						</view>
-						
+
 						<image class="usertoux" :src="'../../static/user' + userrank.node + '.png'" mode=""></image>
 						<view class="flex-col items-start space-y-10">
-							<text class="font_2">{{userrank.name | hideaddress(userrank.name)}}</text>
+							<text class="font_2"
+								v-if="userrank.name">{{userrank.name | hideaddress(userrank.name)}}</text>
 							<text class="font_5">{{userrank.ran}}</text>
 						</view>
 					</view>
 					<view class="flex-row space-x-6">
-						<text class="font_3">貢獻值</text>
+						<text class="font_3">{{$t('rank.contribution')}}</text>
 						<text class="font_4 text_3">${{userrank.sum}}</text>
 					</view>
 				</view>
-				
+
 				<block :key="i" v-for="(item, i) in rankList">
 					<view class="flex-row justify-between items-center list-item" v-if="i<3">
 						<view class="flex-row items-center space-x-12">
@@ -49,13 +53,13 @@
 							</view>
 						</view>
 						<view class="flex-row space-x-6">
-							<text class="font_3">貢獻值</text>
+							<view class="font_3">{{$t('rank.contribution')}}</view>
 							<text class="font_4 text_3">${{item.sum}}</text>
 						</view>
 					</view>
 				</block>
 				<view class="nomore" v-if="rankList.length === 0">
-					暫無數據~
+					{{$t('index.nomoredata')}}~
 				</view>
 			</view>
 		</view>
@@ -67,6 +71,7 @@
 		getrankList,
 		tatolRankingList
 	} from '@/api/api.js';
+	import webUrl from '@/common/url.js'
 	export default {
 		data() {
 			return {
@@ -81,39 +86,67 @@
 			this.getrankList()
 		},
 		methods: {
-			tatolRankingList(){
+			tatolRankingList() {
 				tatolRankingList().then(res => {
 					this.ranktop = res.obj
 				})
 			},
 			getrankList() {
-				this.$tools.loading('數據加載中~')
-				getrankList().then(res => {
-					let list = res.obj
-					this.userrank.index = 0
-					this.userrank.node = 0
-					this.userrank.name = this.address
-					this.userrank.ran = ''
-					this.userrank.sum = 0
-					list.forEach((item,i) => {
-						if(item.name == this.address){
-							console.log(i)
-							this.userrank = item
-							this.userrank.index = i
+				this.$tools.loading(this.$t('index.dataloading'))
+				let that = this;
+				uni.request({
+					url: webUrl.webUrl + '/front/financial/rankingList',
+					method: 'POST',
+					success(res) {
+						let data = res.data
+						if (data.code == 0) {
+							let list = data.obj
+							that.userrank.index = 5201314
+							that.userrank.node = 0
+							that.userrank.name = that.address
+							that.userrank.ran = that.$t('rank.nolist')
+							that.userrank.sum = 0
+							if (list.length > 100) list = list.slice(0, 100)
+							for (let i = 0; i < list.length; i++) {
+								if (list[i].name == that.address) {
+									that.userrank = list[i]
+									that.userrank.index = i
+								}
+							}
+							uni.hideLoading()
+							that.rankList = list
 						}
-					})
-					uni.hideLoading()
-					console.log(this.userrank)
-					this.rankList = list
+					}
 				})
+				// getrankList().then(res => {
+				// 	let list = res.obj
+				// 	this.userrank.index = 0
+				// 	this.userrank.node = 0
+				// 	this.userrank.name = this.address
+				// 	this.userrank.ran = '未上榜'
+				// 	this.userrank.sum = 0
+				// 	if(list.length > 100)list = list.slice(0,100)
+				// 	for(let i=0;i<list.length; i++){
+				// 		if(list[i].name == this.address){
+				// 			this.userrank = list[i]
+				// 			this.userrank.index = i
+				// 		}
+				// 	}
+				// 	uni.hideLoading()
+				// 	this.rankList = list
+				// })
 			}
 		}
 	}
 </script>
 
 <style lang="scss">
+	page {
+		background-color: 1F1F1F;
+	}
+
 	.group_3 {
-		.topbarbox{
+		.topbarbox {
 			@include flexBetween;
 			width: 100%;
 			height: 80rpx;
@@ -122,22 +155,26 @@
 			padding: 0 30rpx;
 			border-bottom: 1px #1F1F1F solid;
 		}
-		.nomore{
-				  @include flexCenter;
-				  color: #c7c7c7;
-				  margin-top: 300rpx;
+
+		.nomore {
+			@include flexCenter;
+			color: #c7c7c7;
+			margin-top: 300rpx;
 		}
-		.usertoux{
+
+		.usertoux {
 			width: 80rpx;
 			height: 80rpx
 		}
+
 		.rankboxi {
 			@include flexCenter;
 			width: 52rpx;
 			font-size: 32rpx;
 			font-weight: bold;
 			color: #ffffff;
-			image{
+
+			image {
 				width: 48rpx;
 				height: 48rpx;
 			}
@@ -245,6 +282,10 @@
 						font-family: MiSans;
 						line-height: 26.92rpx;
 						color: #808080;
+						width: 150rpx;
+						overflow: hidden;
+						text-overflow:ellipsis;
+						white-space:nowrap;
 					}
 
 					.font_4 {

@@ -5,33 +5,40 @@
 				<view class="flex-col">
 					<view class="flex-col list">
 						<view class="flex-row items-center list-item space-x-14">
-							<text class="font_2">链类型</text>
+							<text class="font_2">{{$t('with.linelx')}}</text>
 							<view class="flex-row justify-between items-center flex-auto section">
-								<ld-select :list="ChainTypeList" label-key="label" value-key="value" placeholder="请选择"
+								<ld-select :list="ChainTypeList" label-key="label" value-key="value" :placeholder="$t('with.qxz')"
 									v-model="ChainTypenow" @change="selectChange" bgColor="#272727"
 									selectColor="#00D383" selectBgColor="272727" color="#ffffff"></ld-select>
 							</view>
 						</view>
 						<view class="flex-row items-center list-item space-x-14">
-							<text class="font_2">領取钱包</text>
-							<view class="flex-row justify-between items-center flex-auto section">
+							<text class="font_2">{{$t('with.lqqb')}}</text>
+							<!-- <view class="flex-row justify-between items-center flex-auto section">
 								<ld-select :list="assetsList" label-key="label" value-key="value" placeholder="请选择"
 									v-model="assetsnow" @change="selectChange" bgColor="#272727" selectColor="#00D383"
 									selectBgColor="272727" color="#ffffff"></ld-select>
-							</view>
+							</view> -->
+							<uDataCheckbox v-model="assetsnow" :localdata="assetsList" @change="selectChange" :emptyText="$t('with.getaddring') + '~'" selectedColor="#00D383" selectedTextColor="#00D383"></uDataCheckbox>
 						</view>
 					</view>
-					<input class="text-wrapper" type="number" placeholder="請輸入領取的LTC數量" v-model="withdrawnum" />
+					<view class="iptbox">
+						<input class="text-wrapper" type="number" :placeholder="$t('with.qsrlqultcnum')" v-model="withdrawnum" />
+						<text @click="withdrawnum = applyinfo.applynum">{{$t('with.qb')}}</text>
+					</view>
 				</view>
 				<view class="flex-row justify-between group_4">
-					<text class="font_3">可領取数量：{{applyinfo.applynum}}</text>
-					<text class="font_3" v-if="assetsnow===1">手續費：{{applyinfo.servicecharge}}%</text>
-					<text class="font_3" v-if="assetsnow===2">算力：{{applyinfo.servicecharge}}%</text>
+					<text class="font_3">{{$t('with.klqsl')}}：{{applyinfo.applynum}}</text>
+					<text class="font_3" v-if="assetsnow===1">{{$t('with.sxf')}}：{{applyinfo.servicecharge}}%</text>
+					<text class="font_3" v-if="assetsnow===2">{{$t('with.sl')}}：{{applyinfo.servicecharge}}%</text>
 				</view>
-				<button class="button" v-if="!approveFlag" @tap="ApproveLido">{{$t('index.signature')}}</button>
-				<button class="button" v-else @click="debounce(withdraw,1000)">領取</button>
+				<!-- <button class="button" @click="$tools.noOpen()">{{$t('pledge.get')}}</button> -->
+				<!-- {{$t('index.signature')}} -->
+				<button class="button" v-if="!approveFlag" @tap="ApproveLido">{{$t('pledge.get')}}</button>
+				<button class="button" v-else-if="!approveFlagLTC" @tap="LTCApproveLido">{{$t('pledge.get')}}</button>
+				<button class="button" v-else @click="debounce(withdraw,1000)">{{$t('pledge.get')}}</button>
 				<view class="flex-col group_5 space-y-18">
-					<text class="self-start font_1 text_4">我的領取记录</text>
+					<text class="self-start font_1 text_4">{{$t('with.mylqinfo')}}</text>
 					<view class="flex-col space-y-12">
 						<view class="flex-row justify-between items-center list-item_2" :key="i"
 							v-for="(item, i) in applyList">
@@ -40,7 +47,7 @@
 							<text class="font_5">{{item.createTime}}</text>
 						</view>
 						<view class="nomore" v-if="applyList.length === 0">
-							暫無數據~
+							{{$t('index.nomoredata')}}~
 						</view>
 					</view>
 				</view>
@@ -52,11 +59,13 @@
 
 <script>
 	import ldSelect from '@/components/ld-select/ld-select.vue'
+	import uDataCheckbox from '@/uni_modules/uni-data-checkbox/components/uni-data-checkbox/uni-data-checkbox.vue'
 	import {
 		usdtaddr,
 		contractaddr,
 		lidoabi,
-		tokenabi
+		tokenabi,
+		ltcaddr
 	} from "@/common/lidoabi";
 	const Web3 = require("@/common/getWeb3");
 	import web3utils from '@/common/web3Utils.js';
@@ -74,7 +83,8 @@
 	} from "ethers";
 	export default {
 		components: {
-			ldSelect
+			ldSelect,
+			uDataCheckbox
 		},
 		data() {
 			return {
@@ -91,12 +101,15 @@
 				address: uni.getStorageSync('address'),
 				timeout: null,
 				approveFlag: false,
+				approveFlagLTC: false,
+				nowapprove: false,
 			};
 		},
-		onLoad() {
-			this.allowance()
-			this.getChaintype(), // 获取网络链
-				this.getassets() // 获取钱包列表
+		async onLoad() {
+			await this.allowance()
+			await this.getassets() // 获取钱包列表
+			await this.allowanceLTC()
+			await this.getChaintype() // 获取网络链
 		},
 		watch: {
 			assetsnow(nowval, oldval) {
@@ -105,8 +118,11 @@
 			}
 		},
 		methods: {
-			// 授权ed
+			// 授权usdt
 			async ApproveLido() {
+				if (this.withdrawnum < 0.1) {
+					return this.$tools.toast(this.$t('with.zslq'))
+				}
 				let that = this;
 				let data = new Object();
 				let provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -117,8 +133,29 @@
 				web3utils.approve(data, function(res) {
 					console.log(res)
 					that.approveFlag = true;
+					that.nowapprove = true
 					that.allowance()
-					that.$tools.toast('Authorize succeeded')
+					// that.$tools.toast('Authorize succeeded')
+				})
+			},
+			// 将LTC授权给合约
+			async LTCApproveLido() {
+				if (this.withdrawnum < 0.1) {
+					return this.$tools.toast(this.$t('with.zslq'))
+				}
+				let that = this;
+				let data = new Object();
+				let provider = new ethers.providers.Web3Provider(window.ethereum);
+				const signer = provider.getSigner();
+				data['from'] = new ethers.Contract(ltcaddr, tokenabi, signer);
+				data['to'] = new ethers.Contract(contractaddr, tokenabi, signer);
+				data['account'] = that.address;
+				web3utils.approve(data, function(res) {
+					console.log(res)
+					that.approveFlagLTC = true;
+					that.nowapprove = true
+					that.allowanceLTC()
+					// that.$tools.toast('Authorize succeeded')
 				})
 			},
 			async allowance() {
@@ -132,6 +169,23 @@
 							let n = Number(ethers.utils.formatEther(res.toString()));
 							console.log("授权数量==", n);
 							this.approveFlag = n > 0;
+						})
+				} catch (error) {
+					// this.allowanceBalance = 0;
+					console.error("trigger smart contract error", error)
+				}
+			},
+			async allowanceLTC() {
+				// 查询授权额度
+				try {
+					let provider = new ethers.providers.Web3Provider(window.ethereum);
+					const signer = provider.getSigner();
+					let MyContract = new ethers.Contract(ltcaddr, tokenabi, signer);
+					MyContract.allowance(this.address, contractaddr).then(
+						res => {
+							let n = Number(ethers.utils.formatEther(res.toString()));
+							console.log("LTC授权数量==", n);
+							this.approveFlagLTC = n > 0;
 						})
 				} catch (error) {
 					// this.allowanceBalance = 0;
@@ -156,21 +210,23 @@
 				})
 			},
 			async withdraw() {
+				// this.$tools.noOpen()
+				// return false
 				let that = this
 				let web3 = window.web3
 				if (!this.withdrawnum) {
-					return this.$tools.toast('請輸入正確的領取數量')
+					return this.$tools.toast(that.$t('with.qsrzqdlqjl'))
 				}
 				if (this.withdrawnum < 0.1) {
-					return this.$tools.toast('最少領取0.1')
+					return this.$tools.toast(that.$t('with.zslq'))
 				}
 				if (!this.assetsnow) {
-					return this.$tools.toast('請選擇錢包')
+					return this.$tools.toast(that.$t('with.qxzaddr'))
 				}
 				if (!this.ChainTypenow) {
-					return this.$tools.toast('請選擇链類型')
+					return this.$tools.toast(that.$t('with.qxzline'))
 				}
-				that.$tools.loading('領取中~')
+				that.$tools.loading(that.$t('with.lqz'))
 				userwithdraw({
 					address: uni.getStorageSync('address'),
 					quantity: this.withdrawnum,
@@ -179,8 +235,10 @@
 				}).then(res => {
 					let obj = res.obj
 					try {
-						let provider = new ethers.providers.Web3Provider(window.ethereum);
-						const signer = provider.getSigner();
+						// if(!that.nowapprove){
+							let provider = new ethers.providers.Web3Provider(window.ethereum);
+							const signer = provider.getSigner();
+						// }
 						let MyContract = new ethers.Contract(contractaddr, lidoabi, signer);
 						let amount = web3.utils.toWei((obj.price).toString(), "ether")
 						const signerres = Base64.decode(obj.signer);
@@ -190,12 +248,12 @@
 							this.getApplyLog()
 							this.getApplyset()
 							uni.hideLoading()
-							return that.$tools.toast('領取成功~')
+							return that.$tools.toast(that.$t('with.lqcg'))
 						}).catch(err => {
 							this.getApplyLog()
 							this.getApplyset()
 							uni.hideLoading()
-							return that.$tools.toast('領取失败~')
+							return that.$tools.toast(that.$t('with.lqsb'))
 							// console.log("領取失敗==", err);
 							// uni.hideLoading()
 							// return that.$tools.toast('領取失敗~')
@@ -238,16 +296,17 @@
 				}, wait);
 			},
 			getassets() {
-				this.$tools.loading('數據加載中~')
+				this.$tools.loading(this.$t('index.dataloading'))
 				getassetsTotal().then(res => {
 					let list = res.obj
 					list.forEach(item => {
 						this.assetsList.push({
-							label: item.name,
+							text: item.name,
 							value: item.type
 						})
 					})
-					this.assetsnow = list[0].type
+					this.assetsnow = list[1].type
+					console.log(this.assetsList)
 					uni.hideLoading()
 				})
 			},
@@ -307,7 +366,17 @@
 					}
 				}
 			}
-
+			.iptbox{
+				position: relative;
+				text{
+					position: absolute;
+					right: 20rpx;
+					top: 26rpx;
+					color: #00D383;
+					font-size: 28rpx
+				}
+				
+			}
 			.text-wrapper {
 				@include flexLeft;
 				margin-right: 7.69rpx;

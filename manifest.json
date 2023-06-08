@@ -71,6 +71,6 @@
     "vueVersion" : "2",
     "h5" : {
         "title" : "LiDo",
-        "template" : ""
+        "template" : "index.html"
     }
 }

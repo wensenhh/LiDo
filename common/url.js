@@ -4,7 +4,7 @@
 // const IP = '163.123.245.238';
 
 //正式
-const IP = 'www.lite.ink';
+const IP = 'www.bihoutai.xyz';
 
 
 var ISHTTPS = false;
